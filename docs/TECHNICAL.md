@@ -44,6 +44,8 @@ Bilibili QoL Core v0.3.11 是运行在 Tampermonkey 中的 Bilibili 增强 users
 5. `PreviewBar` 输出进度条片段标记。
 6. `NoticeCenter` 输出跳过、撤销、保留本段等提示。
 
+V0312 SponsorBlock Core Safari smoke 已在真实 Safari 主窗口 sampled page 中验证 segment load、preview bar、auto-skip 和 undo。`keep_current_segment` 只有点击和局部观察证据，仍为 `Partial`；mute / POI 未执行，不得写成已验证或 release acceptance。
+
 ### 整视频标签链路
 
 1. SponsorBlock `full` 片段优先。

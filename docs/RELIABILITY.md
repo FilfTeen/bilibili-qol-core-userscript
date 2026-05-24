@@ -11,6 +11,8 @@ Bilibili QoL Core 是辅助工具，不是平台官方判断或商业合作事�
 
 这些信息有明确来源或明确用户意图，但仍可能受接口状态、页面上下文和脚本版本影响。
 
+V0312 SponsorBlock Core Safari smoke 已验证 sampled Safari page 的 segment load、preview bar、auto-skip 和 undo；keep-current 仍为 partial，mute / POI 未验证。该 smoke 不等于完整 Safari release acceptance。
+
 ## 中等可靠
 
 - 整视频标签接口返回的标签。

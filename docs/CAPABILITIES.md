@@ -19,6 +19,8 @@ QoL Core 会基于当前视频上下文请求 SponsorBlock 片段，并按分类
 - 跳过提示、撤销、保留本段等通知浮窗。
 - 播放器控制栏 SponsorBlock 盾牌按钮。
 
+V0312 SponsorBlock Core Safari smoke 证据边界：sampled Safari S1 page 上 `segment_load`、`preview_bar`、`auto_skip` 和 `undo` 已验证；`keep_current_segment` 仍为 `Partial`；`mute` 和 `POI` 未执行 / 未验证。该证据不是 v0.3.12 runtime release acceptance。
+
 ## 2. 整视频标签
 
 整视频标签会综合以下来源：

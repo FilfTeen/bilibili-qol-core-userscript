@@ -51,6 +51,10 @@
 | `docs/V0312_RELEASE_READINESS_PREFLIGHT.md` | release/preflight 线程对当前 docs-only v0.3.12 主线的只读发布面判断报告。 | DOCS ALIGNMENT NEEDED。 |
 | `docs/V0312_RELEASE_READINESS_G1_DECISION.md` | 主线程对 release readiness preflight 的 G1 裁决，授权极窄 docs alignment。 | 当前 release readiness 决策入口。 |
 | `docs/V0312_RELEASE_READINESS_G2_DECISION.md` | 主线程对 release readiness docs alignment 的 G2 裁决，决定不发布运行时版本、只提交/推送 docs-only。 | NO RELEASE / PUSH DOCS ONLY。 |
+| `docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_PLAN.md` | v0.3.12 SponsorBlock Core Safari smoke G1 采样方案，定义 segment load、preview bar、auto-skip、undo、keep、mute、POI 的证据口径。 | G1 已接受，供 Safari 主窗口采样执行。 |
+| `docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_EVIDENCE_AUDIT.md` | 独立审计线程对 G2/G2R SponsorBlock Core Safari smoke 证据链的复核报告。 | PASS WITH CAVEAT / PARTIAL。 |
+| `docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_G3_DECISION.md` | 主线程 G3 裁决记录，定义 SponsorBlock Core Safari smoke 的能力边界、claim 边界和后续授权状态。 | G3 已完成，不授权实现或 release。 |
+| `docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_EVIDENCE.md` | v0.3.12 SponsorBlock Core Safari smoke 最终证据报告。 | 当前最终结论，PASS WITH CAVEAT / PARTIAL。 |
 
 ## v0.3.11 证据与现实能力文档
 

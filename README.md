@@ -8,7 +8,7 @@ Bilibili QoL Core 的目标不是接管 B 站页面，而是在尽量少改动�
 
 ## 核心能力
 
-- **SponsorBlock 片段处理**：按 BVID hash-prefix 请求片段，支持自动跳过、手动提示、静音、高光点和进度条预览。
+- **SponsorBlock 片段处理**：按 BVID hash-prefix 请求片段，支持自动跳过、手动提示、静音、高光点和进度条预览。V0312 Safari smoke 已验证 sampled page 的 segment load、preview bar、auto-skip 和 undo；keep-current 仍为 partial，mute / POI 未验证。
 - **整视频标签**：综合社区 `full` 片段、整视频标签接口、本地页面/评论信号和用户反馈，在标题与缩略图上显示胶囊标签。
 - **评论区增强**：识别商品卡、导流话术、可疑托评和回复层广告，支持仅标记或折叠，并显示 B 站 payload 自带 IP 属地。
 - **动态页增强**：对首页、动态页、空间页中的可疑商业动态进行标记或折叠，优先降低误杀。
@@ -50,6 +50,7 @@ Chrome 等浏览器可使用同一 userscript 安装链接。当前真实验收�
 - [v0.3.11 最终 Safari 验收清单](./docs/SAFARI_ACCEPTANCE_V0311.md)：发布前必须执行的主窗口实机检查。
 - [V0312 MBGA 现实证据报告](./docs/V0312_MBGA_REALITY_EVIDENCE.md)：docs-only evidence caveat，不是发布说明；结论为 `PASS WITH CAVEAT`，不升级 MBGA claim。
 - [V0312 Local Learning 现实证据报告](./docs/V0312_LOCAL_LEARNING_REALITY_EVIDENCE.md)：docs-only evidence caveat，不是发布说明；只收束 isolated profile 下的窄范围本地学习证据边界。
+- [V0312 SponsorBlock Core Safari Smoke 证据报告](./docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_EVIDENCE.md)：docs-only smoke evidence，不是发布说明；结论为 `PASS WITH CAVEAT / PARTIAL`。
 - [使用手册](./docs/USER_GUIDE.md)：面向用户的安装、配置和操作说明。
 - [能力说明](./docs/CAPABILITIES.md)：QoL Core 已实现能力和不提供能力。
 - [技术文档](./docs/TECHNICAL.md)：模块结构、运行链路和工程约束。
