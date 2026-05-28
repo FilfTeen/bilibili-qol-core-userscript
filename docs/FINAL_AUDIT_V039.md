@@ -40,7 +40,7 @@ This report audited the v0.3.9 / `d4f62ec` release candidate. The two P1 blocker
 - `git branch --contains 9547514`: detached HEAD, `codex/panel-choice-menu-version`, `codex/panel-focus-state-followup`, `codex/v0.3.7-integration`, and `main`.
 - `git ls-remote --tags origin v0.3.9`: confirmed remote tag `v0.3.9` points at `7edb05b`, not current `d4f62ec`.
 - `git log --oneline --decorate origin/main..main`: confirmed 14 local commits after `origin/main` / `v0.3.9`.
-- `rg -n "/Users/dwight|\\.codex/worktrees|Experimental repository|bilibili-sponsorblock.user.js|Bilibili SponsorBlock|BSC|BSB" README.md docs src test scripts package.json dist || true`: only expected historical/internal BSB/BSC compatibility references and no local absolute paths.
+- `rg -n "<absolute-user-path>|<codex-worktree-path>|<private-local-workspace-name>|bilibili-sponsorblock.user.js|Bilibili SponsorBlock|BSC|BSB" README.md docs src test scripts package.json dist || true`: only expected historical/internal BSB/BSC compatibility references and no local absolute paths.
 - `coderabbit auth status --agent`: authenticated as `FilfTeen`.
 - `coderabbit review --agent --base origin/main`: completed, CodeRabbit found 0 findings.
 - `npm test -- test/panel.test.ts test/styles.test.ts`: passed, 2 files and 63 tests.

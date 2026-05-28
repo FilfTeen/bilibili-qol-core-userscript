@@ -13,7 +13,7 @@
 - 本地主线：`main` at `5e9939e`
 - 目标启动时发布基线：tag `v0.3.11` at `2af59cb`
 - 目标启动时远端主线：`origin/main`，当时与上一行发布基线同提交
-- 当前 docs-only 提交：`6888edf`、`1456aae`、`5e9939e` 加上 v0.3.11 handoff docs commits
+- 当前 docs-only 提交：MBGA、Local Learning、handoff 与 release/readiness docs-only 提交；具体主线状态以实时 git log 为准
 - 当前 runtime version：`0.3.11`
 - 当前 dist：`dist/bilibili-qol-core.user.js` metadata `@version 0.3.11`
 - 隔离实验：`codex/panel-choice-menu-version` contains `69194bc` and remains isolated

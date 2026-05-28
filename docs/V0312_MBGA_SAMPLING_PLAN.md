@@ -470,7 +470,7 @@ Classification:
   "target": "v0.3.12 MBGA Reality Evidence Pass",
   "capturedAt": "ISO-8601",
   "repository": {
-    "path": "/Users/dwight/Downloads/Experimental repository_For_Codex/bilibili-sponsorblock-userscript",
+    "path": "<repo-root>",
     "head": "git sha",
     "branch": "branch name",
     "panelChoiceMenuAncestor": false
