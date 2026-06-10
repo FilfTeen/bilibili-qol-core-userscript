@@ -55,6 +55,7 @@
 | `docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_EVIDENCE_AUDIT.md` | 独立审计线程对 G2/G2R SponsorBlock Core Safari smoke 证据链的复核报告。 | PASS WITH CAVEAT / PARTIAL。 |
 | `docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_G3_DECISION.md` | 主线程 G3 裁决记录，定义 SponsorBlock Core Safari smoke 的能力边界、claim 边界和后续授权状态。 | G3 已完成，不授权实现或 release。 |
 | `docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_EVIDENCE.md` | v0.3.12 SponsorBlock Core Safari smoke 最终证据报告。 | 当前最终结论，PASS WITH CAVEAT / PARTIAL。 |
+| `docs/SECURITY_PRIVACY_EXPOSURE_AUDIT_V0312.md` | GitHub 公开暴露面安全/隐私审计和收束报告，记录 P1 私有治理对象 purge 与 P2 本机路径 scrub 的公开结论。 | 已闭环；Support purge 后 API 不可访问，无 P0，无需凭据轮换。 |
 
 ## v0.3.11 证据与现实能力文档
 

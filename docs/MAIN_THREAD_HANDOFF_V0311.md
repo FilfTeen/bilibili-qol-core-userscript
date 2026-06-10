@@ -13,6 +13,8 @@
 - 当前仓库 slug：`FilfTeen/bilibili-qol-core-userscript`
 - 当前 integration 分支：`codex/qol-core-integration`，内容与 v0.3.11 发布代码无差异；`main` 后续只包含 docs-only evidence / governance 提交
 - 隔离实验分支：`codex/panel-choice-menu-version`，提交 `69194bc`，不属于发布主线
+- v0.3.12 当前状态：MBGA Reality Evidence、Local Learning Reality Closure、SponsorBlock Core Safari Smoke、Release Readiness 和 GitHub 公开暴露面隐私收束均已完成；仍无 runtime release 授权
+- 私有 agent governance 资产属于 repo 外个人协作资产；公开仓库不得 tracked 或公开其对象索引
 
 如果接力时发现上述状态和本地 git 不一致，以 `git status --short --branch`、`git log --oneline --decorate --max-count=12`、分别核对 `main` / `origin/main` 和 release tag 的 `git rev-parse` 结果，以及 `git diff --name-only origin/main..main` 的实时结果为准。
 
@@ -64,22 +66,24 @@
 
 ## 当前已知 caveats
 
-- MBGA 仍是现实能力最大缺口：现有证据只支持部分已知规则的 best-effort cleanup。
+- MBGA 仍是高风险边界能力：V0312 已完成现实证据 pass，结论为 `PASS WITH CAVEAT`，只支持部分已知规则的 best-effort / partial cleanup，不授权 claim 或默认策略扩张。
 - native request guard 的 `blocked-fetch` / `would-block-xhr` 真实触发证据仍有限。
 - PCDN/WebRTC 仍是实验子项；不要提升默认策略或扩大声明，除非有新的 Safari A/B 证据。
 - 评论扫描触发自动本地学习写入仍缺更多稳定真实评论样本。
+- SponsorBlock Core Safari smoke 已验证 sampled page 的 segment load、preview bar、auto-skip 和 undo；keep-current 仍为 partial，mute / POI 未验证。
 - SponsorBlock 真实上游投票路径没有在最近一轮中做破坏性实投验收；真实投票必须由用户明确授权。
 - `@connect *` 仍是 userscript 权限风险，当前因服务地址可配置而保留。
+- GitHub 公开暴露面隐私事故已闭环：公开 main 已 scrub，Support purge 后 withheld P1 对象 API 不可访问；不要把私有 purge draft、旧对象 ID 或 private path index 写回公开仓库。
 
 ## 下一任主线程建议
 
 优先顺序：
 
-1. 如果继续做 v0.3.12，先处理 MBGA Reality Fix，不要直接扩大拦截表。
-2. 为 MBGA 做更强 Safari 主窗口 A/B，最好包含 Web Inspector HAR 或等价证据。
-3. 为评论扫描自动写入寻找稳定真实样本，补充样本和验收。
-4. 维护 `docs/ENGINEERING_FILE_INDEX.md`，避免历史报告被误读为当前 blocker。
-5. 如要做新功能，继续使用 `codex/qol-core-integration` 或重命名后的 integration 分支作为集合入口；不要从历史审计线程直接派生实现任务。
+1. 先让规划线程重新评估下一任务区块；当前不应自动启动 runtime release、integration 或新功能目标。
+2. 若继续证据路线，优先考虑 SponsorBlock 核心体验常规 Safari smoke 的维护化，或评论/动态样本治理；不要继续扩大 MBGA。
+3. 若继续 Local Learning，目标应是更多真实评论样本和误杀边界，而不是提高过滤攻击性。
+4. 维护 `docs/ENGINEERING_FILE_INDEX.md` 和本交接手册，避免历史 BLOCK、历史目标卡或 pre-purge 状态被误读为当前 blocker。
+5. 如要做 runtime work，重新裁决 integration 路线；不要从历史审计线程直接派生实现任务。
 
 不建议：
 
@@ -87,6 +91,7 @@
 - 不建议把 MBGA 包装成隐私产品。
 - 不建议在没有 Safari 主窗口重载证据时接受 UI/Tampermonkey 验收结论。
 - 不建议为了节省线程而从复杂审计线程直接派生实现线程。
+- 不建议把私有 agent governance、Support purge draft、旧对象 ID 或 private path index 写入公开 docs。
 
 ## 接力工作流
 
@@ -152,9 +157,17 @@ npm run validate:safari
 - 新增 `docs/ENGINEERING_FILE_INDEX.md`。
 - 新增本交接手册。
 
+后续 docs-only governance / evidence 收束：
+
+- V0312 MBGA Reality Evidence Pass 已完成：`PASS WITH CAVEAT`，不授权实现或 claim 升级。
+- V0312 Local Learning Reality Closure 已完成：`PASS WITH CAVEAT`，只支持 isolated profile page-heuristic write / panel / delete / panel-derived refresh cleanup。
+- V0312 SponsorBlock Core Safari Smoke 已完成：`PASS WITH CAVEAT / PARTIAL`，不授权 release。
+- V0312 Release Readiness Decision 已完成：`NO RELEASE / PUSH DOCS ONLY`。
+- GitHub 公开暴露面安全/隐私收束已完成：无 P0，公开 main scrubbed，Support purge 后 withheld P1 对象 API 不可访问。
+
 ## 交接结论
 
-当前工程处于可接力状态。下一任主线程应把 `v0.3.11` tag `2af59cb` 视为已落地 runtime release baseline。
+当前工程处于可接力状态。下一任主线程应把 `v0.3.11` tag `2af59cb` 视为已落地 runtime release baseline，并把 V0312 视为 docs-only evidence / governance milestone。
 
 `origin/main` / `main` 的实时 HEAD 必须由后续线程运行 `git rev-parse main origin/main` 核对；该 docs-only governance / evidence 状态不改变 runtime release baseline。`v0.3.12` 只是 docs-only evidence / governance milestone，未授权 runtime release。
 

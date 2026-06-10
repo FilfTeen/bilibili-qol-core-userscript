@@ -2,16 +2,18 @@
 
 Date: 2026-05-28
 
+Status update: 2026-06-10
+
 Scope: public GitHub exposure audit for `FilfTeen/bilibili-qol-core-userscript`. This audit covers current local `main`, cached `origin/*` refs, tags, GitHub refs API, PR metadata/head-base commits, release assets, repository metadata, GitHub Pages status, and historical GitHub object accessibility.
 
-This public report intentionally withholds private object IDs, private path indexes, and sensitive source text. The complete GitHub Support purge request is stored outside this repository.
+This public report intentionally withholds private object IDs, private path indexes, support-ticket details, and sensitive source text. The complete GitHub Support purge records are stored outside this repository.
 
 ## Executive Verdict
 
-- Current local worktree after this remediation has no P2 local identity/path literals targeted by this scan.
-- `origin/main` still contains the P2 literals until the docs-only scrub commit from this thread is pushed.
+- Closure status: `PASS - PRIVACY INCIDENT BLOCK CLOSED`.
+- Current `main` / `origin/main` after remediation have no P2 local identity/path literals targeted by this scan.
 - No private agent governance file is tracked in current `HEAD`, `origin/main`, remote branch heads, or tags scanned through local refs and GitHub refs API.
-- GitHub commit and contents APIs still expose P1 private governance material in unreachable GitHub objects. Details are withheld from this public report; the private purge request is stored outside this repository.
+- GitHub Support confirmed garbage collection / cache clearance for the unreachable P1 exposure. Post-purge API verification found no accessible commit, tree, branches-where-head, or contents responses for the withheld private object set.
 - Release assets scanned from all listed releases contain only userscript assets and no detected P0/P1/P2 exposure patterns.
 - PR metadata for PRs #1-#4 is merged-only and the scanned PR head/base trees did not expose P1/P2 paths.
 - No credential rotation indicated by this scan.
@@ -48,23 +50,31 @@ Limitations:
 
 | id | severity | location | reachable? | current tree? | GitHub API accessible? | remediation | status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| F-001 | P1 Private Asset | Unreachable historical GitHub objects; exact object IDs and affected private path set withheld | No branch/tag/PR head reachability found | No | Yes, commit API and contents API | GitHub Support purge request required; private draft stored outside repo | Open, main-thread authorization required |
-| F-003 | P2 Local Identity / Path | `docs/FINAL_AUDIT_V039.md:43`; historical copies in `v0.3.10` and `v0.3.11` | Yes, current `origin/main` and tags `v0.3.10`, `v0.3.11` | Yes before this commit | N/A for line-level API; file is public through refs | Replaced literal local identity/workspace patterns with placeholders in current tree | Fixed in local docs-only commit; tag history remains |
-| F-004 | P2 Local Identity / Path | `docs/V0312_LOCAL_LEARNING_SAMPLING_PLAN.md:852` | Yes, current `origin/main` | Yes before this commit | N/A for line-level API; file is public through refs | Replaced absolute repository path with `<repo-root>` | Fixed in local docs-only commit; push required |
-| F-005 | P2 Local Identity / Path | `docs/V0312_MBGA_SAMPLING_PLAN.md:473` | Yes, current `origin/main` | Yes before this commit | N/A for line-level API; file is public through refs | Replaced absolute repository path with `<repo-root>` | Fixed in local docs-only commit; push required |
+| F-001 | P1 Private Asset | Unreachable historical GitHub objects; exact object IDs and affected private path set withheld | No branch/tag/PR head reachability found | No | No after Support purge verification | GitHub Support purge completed; post-purge API checks return inaccessible for the withheld private object set | Closed |
+| F-003 | P2 Local Identity / Path | `docs/FINAL_AUDIT_V039.md:43`; historical copies in `v0.3.10` and `v0.3.11` | Yes, historical tags retain old wording | No in current main | N/A for line-level API; historical tag files remain public through refs | Replaced literal local identity/workspace patterns with placeholders in current tree | Closed for current main; no emergency tag rewrite authorized |
+| F-004 | P2 Local Identity / Path | `docs/V0312_LOCAL_LEARNING_SAMPLING_PLAN.md:852` | Was present in pre-remediation main | No in current main | N/A for line-level API | Replaced absolute repository path with `<repo-root>` | Closed |
+| F-005 | P2 Local Identity / Path | `docs/V0312_MBGA_SAMPLING_PLAN.md:473` | Was present in pre-remediation main | No in current main | N/A for line-level API | Replaced absolute repository path with `<repo-root>` | Closed |
 | F-006 | P3 Local Evidence Pointer | `README.md`, multiple `docs/*.md` files referencing ignored `output/` evidence, screenshots, and HAR names | Yes | Yes | Public through refs | No raw evidence files were tracked; `.gitignore` already ignores `output`; keep pointers abstract in future docs | Documented; optional docs sweep requires main-thread policy decision |
 
 ## Withheld P1 Exposure Details
 
-Historical GitHub objects remain retrievable through GitHub APIs even though no branch, tag, or PR head/base reachability was found in this audit.
+Historical GitHub objects were retrievable through GitHub APIs even though no branch, tag, or PR head/base reachability was found in this audit.
 
-The exact object IDs, affected private path set, and GitHub API evidence are intentionally withheld from this public report because they would help locate private governance material. The complete GitHub Support purge request is stored outside this repository and does not include private file contents.
+The exact object IDs, affected private path set, and GitHub API evidence are intentionally withheld from this public report because they would help locate private governance material. The complete GitHub Support purge request and closure notes are stored outside this repository and do not include private file contents in public docs.
+
+Post-purge verification summary:
+
+- Commit API accessible responses: `0/2`.
+- Git commit API accessible responses: `0/2`.
+- Tree API accessible responses: `0/2`.
+- Branches-where-head accessible responses: `0/2`.
+- Contents API accessible responses for the withheld private path set: `0/24`.
 
 ## Current Ref Assessment
 
-Remote heads from GitHub refs API:
+Remote heads from GitHub refs/API checks after closure:
 
-- `refs/heads/main` -> `f8e38f17362a7245fcd06c2896ac5ed5a57f193e`
+- `refs/heads/main` -> `8216844f5dc12d81ccbdaaf37cd34c3c231434df`
 - `refs/heads/codex/repo-rename-qol-core-migration` -> `5070c4d22d236b6fbc0447418d37884148d7f3ff`
 - `refs/heads/codex/v0.3.7-qol-core-rc` -> `f3afdc1adcbd648aaec137a4ff1fac3c59395440`
 
@@ -72,10 +82,10 @@ Tags from GitHub refs API matched local cached tags:
 
 - `v0.1.0`, `v0.2.0`, `v0.3.0`, `v0.3.1`, `v0.3.2`, `v0.3.5`, `v0.3.6`, `v0.3.7`, `v0.3.8`, `v0.3.9`, `v0.3.10`, `v0.3.11`
 
-Reachable history conclusion:
+Reachable history conclusion after closure:
 
 - P1 private governance paths were not detected in branch/tag reachable object path scans.
-- P2 local identity/path literals were detected in `origin/main` and historical tags `v0.3.10` and `v0.3.11`.
+- P2 local identity/path literals are removed from current `main` / `origin/main`; historical tags `v0.3.10` and `v0.3.11` still contain old P2-only wording and are not being rewritten.
 - No P0 credential pattern was detected by exact secret-pattern scans.
 
 ## PR, Release, Pages Assessment
@@ -111,15 +121,18 @@ Repository metadata:
 - `node_modules` in `.gitignore` and `package-lock.json` is expected dependency metadata and is P4.
 - `output/` references are P3 pointers to ignored local evidence directories; no actual `output/` evidence file path was found in `git rev-list --remotes=origin --tags --objects`.
 
-## GitHub Support Purge Request
+## GitHub Support Purge Closure
 
-The complete GitHub Support purge draft is intentionally omitted from this public repository. It is stored outside this repository with the full object IDs, affected private path set, repository metadata, and API accessibility evidence needed for submission.
+The complete GitHub Support purge draft and closure notes are intentionally omitted from this public repository. They are stored outside this repository with the full object IDs, affected private path set, repository metadata, API accessibility evidence, support status notes, and screenshots.
 
-Public summary: request GitHub purge cached views, dangling/unreachable object access, and commit/tree/content API access for unreachable objects exposing private governance material. Do not include sensitive file contents in the support ticket.
+Public summary: GitHub Support completed the requested cached view / dangling object cleanup. Post-purge API verification found the withheld private object set inaccessible. Do not include sensitive file contents or withheld object indexes in public docs or support summaries.
 
-## Main Thread Decision Points
+## Main Thread Closure Decision
 
-1. Accept and push this docs-only scrub commit to remove current-tree P2 exposure from `main`.
-2. Authorize submitting the private GitHub Support purge request for the unreachable P1 exposure objects.
-3. Decide whether to rewrite historical tags `v0.3.10` and `v0.3.11` for P2-only local path wording. This audit does not recommend emergency tag rewrite absent P0/P1 reachability, but it remains a policy decision.
-4. Decide whether to run a separate docs evidence-pointer sweep to further abstract P3 `output/` references in accepted evidence documents. No tracked raw evidence files were found.
+Main-thread result:
+
+- Privacy incident block is closed.
+- No force push, tag rewrite, repository visibility change, release deletion, or credential rotation is required.
+- Current `main` / `origin/main` remain docs-only governance / evidence state.
+- Runtime release baseline remains `v0.3.11`; no v0.3.12 runtime release is authorized.
+- Optional future cleanup: a separate P3 evidence-pointer docs sweep may further abstract `output/` references, but no tracked raw evidence files were found.
