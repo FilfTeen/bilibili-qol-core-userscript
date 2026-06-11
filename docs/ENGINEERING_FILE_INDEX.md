@@ -56,6 +56,20 @@
 | `docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_G3_DECISION.md` | 主线程 G3 裁决记录，定义 SponsorBlock Core Safari smoke 的能力边界、claim 边界和后续授权状态。 | G3 已完成，不授权实现或 release。 |
 | `docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_EVIDENCE.md` | v0.3.12 SponsorBlock Core Safari smoke 最终证据报告。 | 当前最终结论，PASS WITH CAVEAT / PARTIAL。 |
 | `docs/SECURITY_PRIVACY_EXPOSURE_AUDIT_V0312.md` | GitHub 公开暴露面安全/隐私审计和收束报告，记录 P1 私有治理对象 purge 与 P2 本机路径 scrub 的公开结论。 | 已闭环；Support purge 后 API 不可访问，无 P0，无需凭据轮换。 |
+| `docs/V0312_COMMENT_DYNAMIC_SAMPLE_GOVERNANCE_DESIGN.md` | v0.3.12 评论 / 动态样本治理设计，定义隐私协议、样本分类表、Local Learning 污染保护和 Safari 采样 gate。 | G1 research accepted；不授权采样或实现。 |
+| `docs/V0312_COMMENT_DYNAMIC_GOVERNANCE_G1_REVIEW.md` | 主线程对评论 / 动态样本治理设计的 G1 审核记录和下一步采样 manifest 授权。 | G1 PASS WITH CAVEAT；下一步仅授权 docs-only manifest design。 |
+| `docs/V0312_COMMENT_DYNAMIC_SAMPLING_MANIFEST_PLAN.md` | v0.3.12 评论 / 动态 Safari 采样 manifest 和 capture-plan 契约，定义隔离 profile、URL 冻结、dist hash proof、output 结构和 privacy scan。 | G2 已接受；不等于采样证据。 |
+| `docs/V0312_COMMENT_DYNAMIC_MANIFEST_G2_REVIEW.md` | 主线程对评论 / 动态采样 manifest 的 G2 审核记录，限定后续 Safari capture 的 profile、隐私和 claim 边界。 | G2 PASS WITH CAVEAT；仅授权 isolated-profile Safari capture。 |
+| `docs/V0312_COMMENT_DYNAMIC_CAPTURE_G3_REVIEW.md` | 主线程对首轮评论 / 动态 Safari capture 证据包的 G3 审核记录，区分 personal-profile PARTIAL 与原始 isolated-profile acceptance。 | PARTIAL - POLICY DEVIATION；仅授权独立审计。 |
+| `docs/V0312_COMMENT_DYNAMIC_EVIDENCE_AUDIT.md` | 独立审计线程对 personal-profile PARTIAL capture 证据包的复核报告，检查 dist 身份、隐私扫描、样本 verdict 和 storage `not_checked` 边界。 | 建议 RETRY_ISOLATED_PROFILE_CAPTURE。 |
+| `docs/V0312_COMMENT_DYNAMIC_AUDIT_G4_DECISION.md` | 主线程对 personal-profile PARTIAL 审计的 G4 裁决记录，接受审计并限定 isolated-profile retry 前置条件。 | G4 已接受；仅授权 isolated-profile retry，不允许 personal fallback。 |
+| `docs/V0312_COMMENT_DYNAMIC_ISOLATED_RETRY_G5_REVIEW.md` | 主线程对 isolated-profile retry `NOT_VERIFIED` 证据包的 G5 审核记录，区分 profile/freeze/hash 已修正与目标脚本未挂载的注入失败。 | NOT_VERIFIED；仅授权 injection-failure audit，不授权继续盲采样。 |
+| `docs/V0312_COMMENT_DYNAMIC_ISOLATED_INJECTION_AUDIT.md` | 独立审计线程对 isolated-profile retry 注入失败的复核报告，检查 summary metadata、Tampermonkey 启用、权限、URL 支持和 page-state 探针边界。 | 建议 RETRY_WITH_METHOD_FIX。 |
+| `docs/V0312_COMMENT_DYNAMIC_INJECTION_AUDIT_G6_DECISION.md` | 主线程对注入失败审计的 G6 裁决记录，授权一次 method-fixed isolated Safari retry，并要求 per-domain permission、post-enable navigation 和 sentinel 证据。 | G6 已接受；仅授权方法修复后的隔离采样重试。 |
+| `docs/V0312_COMMENT_DYNAMIC_METHOD_FIXED_CAPTURE_G7_REVIEW.md` | 主线程对 method-fixed isolated retry `BLOCKED_PERMISSION_READY_NOT_PROVEN` 证据包的 G7 审核记录，确认样本未进入有效采样且不授权继续盲采样。 | BLOCKED_ACCEPTED；仅授权 blocker audit / closure recommendation。 |
+| `docs/V0312_COMMENT_DYNAMIC_METHOD_FIXED_BLOCKER_AUDIT.md` | 独立审计线程对 method-fixed blocker 证据的收束复核报告，判断是否还有隐私安全、非重复的最后采样方法。 | 建议 ACCEPT_BLOCKED_AND_CLOSE。 |
+| `docs/V0312_COMMENT_DYNAMIC_G8_DECISION.md` | 主线程对评论 / 动态样本治理目标的最终 G8 裁决，接受 blocker audit 并关闭当前目标。 | BLOCKED_AND_CLOSED；不授权实现、采样或 release。 |
+| `docs/V0312_COMMENT_DYNAMIC_SAMPLE_GOVERNANCE_EVIDENCE.md` | v0.3.12 评论 / 动态样本治理最终证据报告，汇总 G1-G8、claim 边界和未来路线。 | 当前最终结论，Blocked / Not Verified。 |
 
 ## v0.3.11 证据与现实能力文档
 

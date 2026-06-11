@@ -58,6 +58,8 @@ V0312 SponsorBlock Core Safari smoke 证据边界：sampled Safari S1 page 上 `
 
 评论反馈入口是低侵入展开菜单，只在本地反馈可用且上游未命中整视频标签时出现。
 
+V0312 评论 / 动态样本治理已关闭为 `Blocked / Not Verified`：本轮没有验证 Safari 主窗口下的评论商品样本、评论负样本安全、organic comment scanning、comment feedback lock closure 或评论驱动的 Local Learning 写入。
+
 ## 4. 动态页增强
 
 动态页能力包括：
@@ -68,6 +70,8 @@ V0312 SponsorBlock Core Safari smoke 证据边界：sampled Safari S1 page 上 `
 - 保守处理普通活动、资讯、玩梗、引用和反讽语境。
 
 动态识别和评论识别共用商业意图口径，但页面接入层保持分离。
+
+V0312 评论 / 动态样本治理没有验证 Safari 主窗口下的动态商品样本或动态负样本安全；动态证据不得用于证明视频页 Local Learning 闭环。
 
 ## 5. 本地推理与自学习
 

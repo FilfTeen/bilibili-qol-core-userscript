@@ -38,6 +38,8 @@ V0312 MBGA Safari sampling 已收束为 `PASS WITH CAVEAT`，但 HAR 不可用�
 
 QoL Core 的策略优先降低误杀，而不是追求最高召回。
 
+V0312 评论 / 动态样本治理已关闭为 `Blocked / Not Verified`。本轮只收束了样本治理、隐私边界和 Safari/Tampermonkey readiness blocker，没有验证评论/动态 Safari 行为、广泛误杀安全或评论驱动的本地学习闭环。
+
 ## 常见误差
 
 - **误判**：普通测评、活动记录、借测、引用广告话术被当成商业内容。

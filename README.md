@@ -51,6 +51,7 @@ Chrome 等浏览器可使用同一 userscript 安装链接。当前真实验收�
 - [V0312 MBGA 现实证据报告](./docs/V0312_MBGA_REALITY_EVIDENCE.md)：docs-only evidence caveat，不是发布说明；结论为 `PASS WITH CAVEAT`，不升级 MBGA claim。
 - [V0312 Local Learning 现实证据报告](./docs/V0312_LOCAL_LEARNING_REALITY_EVIDENCE.md)：docs-only evidence caveat，不是发布说明；只收束 isolated profile 下的窄范围本地学习证据边界。
 - [V0312 SponsorBlock Core Safari Smoke 证据报告](./docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_EVIDENCE.md)：docs-only smoke evidence，不是发布说明；结论为 `PASS WITH CAVEAT / PARTIAL`。
+- [V0312 评论 / 动态样本治理证据报告](./docs/V0312_COMMENT_DYNAMIC_SAMPLE_GOVERNANCE_EVIDENCE.md)：docs-only governance evidence，不是发布说明；结论为 `Blocked / Not Verified`，不证明评论/动态 Safari 行为。
 - [V0312 公开暴露面安全/隐私审计](./docs/SECURITY_PRIVACY_EXPOSURE_AUDIT_V0312.md)：docs-only closure report；记录私有治理资产 purge 和本机路径 scrub 的公开结论。
 - [使用手册](./docs/USER_GUIDE.md)：面向用户的安装、配置和操作说明。
 - [能力说明](./docs/CAPABILITIES.md)：QoL Core 已实现能力和不提供能力。

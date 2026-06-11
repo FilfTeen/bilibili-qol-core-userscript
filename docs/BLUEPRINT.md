@@ -33,9 +33,9 @@
 | SponsorBlock 片段 | 跳过广告、静音、高光提示 | `src/core/controller.ts`、`src/api/sponsorblock-client.ts`、`src/core/segment-filter.ts` | `test/controller.test.ts`、`test/segment-filter.test.ts` | V0312 sampled Safari page 验证 segment load、preview bar、auto-skip、undo；keep-current partial；mute/POI 未验证 |
 | 整视频标签 | 提示整支视频商业性质 | `src/core/whole-video-label.ts`、`src/api/video-label-client.ts`、`src/ui/title-badge.ts` | `test/whole-video-label.test.ts`、`test/title-badge.test.ts` | 标题胶囊唯一、popover 正常、反馈入口正确 |
 | 缩略图标签 | 在信息流提前提示视频性质 | `src/features/thumbnail-labels.ts` | `test/thumbnail-labels.test.ts` | 首页/搜索/推荐卡片不挤压、不重复 |
-| 评论识别 | 标记或折叠广告/托评 | `src/features/comment-filter.ts`、`src/utils/commercial-intent.ts` | `test/comment-filter.test.ts`、`test/commercial-intent.test.ts` | 商品卡、导流评论、回复层、恢复入口 |
+| 评论识别 | 标记或折叠广告/托评 | `src/features/comment-filter.ts`、`src/utils/commercial-intent.ts` | `test/comment-filter.test.ts`、`test/commercial-intent.test.ts` | 商品卡、导流评论、回复层、恢复入口；V0312 评论/动态样本治理为 Blocked / Not Verified，不证明 Safari 评论行为 |
 | 评论属地 | 显示 payload 自带 IP 属地 | `src/features/comment-filter.ts`、`src/ui/inline-feedback.ts` | `test/comment-filter.test.ts`、`test/inline-feedback.test.ts` | 标签颜色、透明模式、无属地时不伪造 |
-| 动态识别 | 标记或折叠商业动态 | `src/features/dynamic-filter.ts` | `test/dynamic-filter.test.ts` | 首页/动态页/空间页普通动态不误伤 |
+| 动态识别 | 标记或折叠商业动态 | `src/features/dynamic-filter.ts` | `test/dynamic-filter.test.ts` | 首页/动态页/空间页普通动态不误伤；V0312 评论/动态样本治理为 Blocked / Not Verified，不证明 Safari 动态行为 |
 | 本地推理与学习管理 | 上游未命中时补充判断，并允许用户管理本地学习记录 | `src/utils/local-video-signal.ts`、`src/utils/local-learning.ts`、`src/core/local-label-store.ts`、`src/ui/panel.ts` | `test/local-video-signal.test.ts`、`test/local-learning.test.ts`、`test/local-label-store.test.ts`、`test/panel.test.ts`、`npm run evaluate:recognition` | 上游存在时短路，本地保留/忽略可持续；控制台可查看、删除、清空本地记录；V0312 仅验证 isolated profile 下 page-heuristic/panel cleanup 窄闭环 |
 | QoL Core 控制台 | 配置和维护入口 | `src/ui/panel.ts`、`src/ui/styles.ts` | `test/panel.test.ts`、`test/styles.test.ts` | 颜色编辑、二阶段确认、滚动不跳动 |
 | 紧凑顶栏 | 视频页搜索和账号入口 | `src/ui/compact-header.ts`、`src/platform/native-request-guard.ts`、`src/utils/page.ts` | `test/compact-header.test.ts`、`test/native-request-guard.test.ts`、`test/page.test.ts` | 网页全屏隐藏，搜索框不被重建打断，请求 guard 不破坏登录态 |
