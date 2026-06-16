@@ -1,78 +1,78 @@
-# Bilibili QoL Core v0.3.11 工程蓝图
+# Bilibili QoL Core v0.3.11 Blueprint
 
-本文件是后续开发、审计和派生线程接力的总索引。它描述当前真实能力、实现入口、数据边界、测试入口和验收重点。工程文件职责与当前性见 [ENGINEERING_FILE_INDEX.md](./ENGINEERING_FILE_INDEX.md)，主线程接力入口见 [MAIN_THREAD_HANDOFF_V0311.md](./MAIN_THREAD_HANDOFF_V0311.md)。
+This blueprint is the public product map for Bilibili QoL Core. It describes the runtime shape, implemented features, data boundaries, and validation entry points for contributors and advanced users.
 
-`v0.3.11` 是以 Local Learning Management 为主功能的当前主线版本，同时补充 MBGA decision telemetry、native request guard 诊断快照、诊断样本 URL 归一化和 Safari 证据文档；当前发布产物为 `dist/bilibili-qol-core.user.js`。
+`v0.3.11` is the current release line. It focuses on Local Learning Management, diagnostic transparency, conservative MBGA cleanup, and keeping upstream behavior boundaries clear.
 
-## 1. 运行环境与启动
+## 1. Runtime Environment
 
-| 项目 | 当前实现 |
+| Area | Current shape |
 | --- | --- |
-| 分发形态 | Tampermonkey 单文件 userscript |
-| 真实验收环境 | Safari 主窗口，已登录，已安装当前构建产物 |
-| 入口文件 | `src/main.ts` |
-| 构建入口 | `scripts/build.mjs` |
-| 产物 | `dist/bilibili-qol-core.user.js` |
-| 菜单入口 | `src/runtime/menu.ts` 注册 `打开 QoL Core 控制台`、`打开 QoL Core 帮助`、`清理 QoL Core 缓存` |
+| Distribution | Tampermonkey single-file userscript |
+| Primary validation browser | Safari main window with Tampermonkey |
+| Entry file | `src/main.ts` |
+| Build script | `scripts/build.mjs` |
+| Build artifact | `dist/bilibili-qol-core.user.js` |
+| Settings entries | Tampermonkey menu, title badge, and player shield button |
 
-启动顺序：
+Startup flow:
 
-1. 在 document-start 安装页面桥接和原生请求 guard。
-2. 检查 top-level window 和支持页面。
-3. 注入主样式和页面桥接。
-4. 加载配置、统计、缓存、本地标签、投票历史。
-5. 挂载 MBGA。
-6. 启动视频、评论、动态、缩略图控制器。
-7. 注册 Tampermonkey 菜单。
-8. 交给 lifecycle 管理 `pageshow/pagehide`。
+1. Install the page bridge and native request guard at `document-start`.
+2. Confirm top-level window and supported page scope.
+3. Inject styles and runtime bridge.
+4. Load config, statistics, caches, local labels, and vote history.
+5. Mount MBGA when enabled.
+6. Start video, comment, dynamic-feed, and thumbnail controllers.
+7. Register Tampermonkey menu commands.
+8. Hand lifecycle events to the runtime lifecycle manager.
 
-## 2. 功能能力索引
+## 2. Capability Index
 
-| 能力 | 用户价值 | 主要实现 | 关键测试 | Safari 验收点 |
+| Capability | User value | Main implementation | Key tests | Validation focus |
 | --- | --- | --- | --- | --- |
-| SponsorBlock 片段 | 跳过广告、静音、高光提示 | `src/core/controller.ts`、`src/api/sponsorblock-client.ts`、`src/core/segment-filter.ts` | `test/controller.test.ts`、`test/segment-filter.test.ts` | V0312 sampled Safari page 验证 segment load、preview bar、auto-skip、undo；keep-current partial；mute/POI 未验证 |
-| 整视频标签 | 提示整支视频商业性质 | `src/core/whole-video-label.ts`、`src/api/video-label-client.ts`、`src/ui/title-badge.ts` | `test/whole-video-label.test.ts`、`test/title-badge.test.ts` | 标题胶囊唯一、popover 正常、反馈入口正确 |
-| 缩略图标签 | 在信息流提前提示视频性质 | `src/features/thumbnail-labels.ts` | `test/thumbnail-labels.test.ts` | 首页/搜索/推荐卡片不挤压、不重复 |
-| 评论识别 | 标记或折叠广告/托评 | `src/features/comment-filter.ts`、`src/utils/commercial-intent.ts` | `test/comment-filter.test.ts`、`test/commercial-intent.test.ts` | 商品卡、导流评论、回复层、恢复入口；V0312 评论/动态样本治理为 Blocked / Not Verified，不证明 Safari 评论行为 |
-| 评论属地 | 显示 payload 自带 IP 属地 | `src/features/comment-filter.ts`、`src/ui/inline-feedback.ts` | `test/comment-filter.test.ts`、`test/inline-feedback.test.ts` | 标签颜色、透明模式、无属地时不伪造 |
-| 动态识别 | 标记或折叠商业动态 | `src/features/dynamic-filter.ts` | `test/dynamic-filter.test.ts` | 首页/动态页/空间页普通动态不误伤；V0312 评论/动态样本治理为 Blocked / Not Verified，不证明 Safari 动态行为 |
-| 本地推理与学习管理 | 上游未命中时补充判断，并允许用户管理本地学习记录 | `src/utils/local-video-signal.ts`、`src/utils/local-learning.ts`、`src/core/local-label-store.ts`、`src/ui/panel.ts` | `test/local-video-signal.test.ts`、`test/local-learning.test.ts`、`test/local-label-store.test.ts`、`test/panel.test.ts`、`npm run evaluate:recognition` | 上游存在时短路，本地保留/忽略可持续；控制台可查看、删除、清空本地记录；V0312 仅验证 isolated profile 下 page-heuristic/panel cleanup 窄闭环 |
-| QoL Core 控制台 | 配置和维护入口 | `src/ui/panel.ts`、`src/ui/styles.ts` | `test/panel.test.ts`、`test/styles.test.ts` | 颜色编辑、二阶段确认、滚动不跳动 |
-| 紧凑顶栏 | 视频页搜索和账号入口 | `src/ui/compact-header.ts`、`src/platform/native-request-guard.ts`、`src/utils/page.ts` | `test/compact-header.test.ts`、`test/native-request-guard.test.ts`、`test/page.test.ts` | 网页全屏隐藏，搜索框不被重建打断，请求 guard 不破坏登录态 |
-| 通知中心 | 低打扰提示和操作反馈 | `src/ui/notice-center.ts` | `test/notice-center.test.ts` | 出现/消失动画、播放器避让、无残留 |
-| MBGA | 生态噪音压制（best-effort）和页面小修 | `src/features/mbga/core.ts` | `test/mbga.test.ts` | 播放/动态/专栏页面无明显副作用；V0312 Safari sampling 为 `PASS WITH CAVEAT`，证据 partial / below-HAR-grade，不升级 claim |
+| SponsorBlock segments | Skip ads, mute sections, show POI highlights | `src/core/controller.ts`, `src/api/sponsorblock-client.ts`, `src/core/segment-filter.ts` | `test/controller.test.ts`, `test/segment-filter.test.ts` | Segment load, preview bar, skip, undo, keep-current, mute, POI |
+| Whole-video labels | Show commercial nature for the whole video | `src/core/whole-video-label.ts`, `src/api/video-label-client.ts`, `src/ui/title-badge.ts` | `test/whole-video-label.test.ts`, `test/title-badge.test.ts` | Unique title badge, clear popover, correct feedback entry |
+| Thumbnail labels | Show video nature before opening videos | `src/features/thumbnail-labels.ts` | `test/thumbnail-labels.test.ts` | Home, search, history, and recommendation cards stay readable |
+| Comment enhancements | Mark or fold ads and suspicious promotion | `src/features/comment-filter.ts`, `src/utils/commercial-intent.ts` | `test/comment-filter.test.ts`, `test/commercial-intent.test.ts` | Product cards, promotion language, reply layer, restore action |
+| Comment IP location | Display Bilibili-provided location text | `src/features/comment-filter.ts`, `src/ui/inline-feedback.ts` | `test/comment-filter.test.ts`, `test/inline-feedback.test.ts` | No fabricated location when payload does not expose it |
+| Dynamic-feed enhancements | Mark or fold likely commercial dynamic posts | `src/features/dynamic-filter.ts` | `test/dynamic-filter.test.ts` | Supported feed pages, false-positive protection, restore action |
+| Local learning | Let users manage local whole-video learning | `src/utils/local-video-signal.ts`, `src/utils/local-learning.ts`, `src/core/local-label-store.ts`, `src/ui/panel.ts` | `test/local-video-signal.test.ts`, `test/local-learning.test.ts`, `test/local-label-store.test.ts`, `test/panel.test.ts` | Keep, ignore, delete, clear, and refresh behavior |
+| QoL Core console | Configuration and local maintenance | `src/ui/panel.ts`, `src/ui/styles.ts` | `test/panel.test.ts`, `test/styles.test.ts` | Color editing, confirmations, scrolling, responsive layout |
+| Compact header | Search and account access on video pages | `src/ui/compact-header.ts`, `src/platform/native-request-guard.ts`, `src/utils/page.ts` | `test/compact-header.test.ts`, `test/native-request-guard.test.ts`, `test/page.test.ts` | Fullscreen behavior, search continuity, login-safe guard behavior |
+| Notice center | Low-noise feedback and actions | `src/ui/notice-center.ts` | `test/notice-center.test.ts` | Animation, player avoidance, cleanup |
+| MBGA | Best-effort cleanup for known page noise | `src/features/mbga/core.ts` | `test/mbga.test.ts` | Known-rule behavior, no broad blocking, no visible breakage |
 
-## 3. 页面范围
+## 3. Page Scope
 
-| 页面 | 检测类型 | 支持能力 |
+| Page | Detected type | Supported features |
 | --- | --- | --- |
-| `www.bilibili.com/video/*` | `video` | 片段、标题标签、评论、缩略图、紧凑顶栏、MBGA |
-| `www.bilibili.com/list/*` | `list` | 视频能力 best effort |
-| `www.bilibili.com/medialist/play/*` | `list` | 视频能力 best effort |
-| `www.bilibili.com/bangumi/*` | `anime` | 视频能力 best effort，紧凑顶栏需网页全屏隐藏 |
-| `www.bilibili.com/festival/*` | `festival` | 视频能力 best effort |
-| `www.bilibili.com/opus/*` | `opus` | 视频/评论能力 best effort |
-| `search.bilibili.com/*` | `search` | 缩略图标签 |
-| `t.bilibili.com/*` | `dynamic` | 动态识别、评论能力 best effort |
-| `space.bilibili.com/*` | `channel` | 动态识别、评论能力 best effort、缩略图标签 |
+| `www.bilibili.com/video/*` | `video` | Segments, title label, comments, thumbnails, compact header, MBGA |
+| `www.bilibili.com/list/*` | `list` | Video features on a best-effort basis |
+| `www.bilibili.com/medialist/play/*` | `list` | Video features on a best-effort basis |
+| `www.bilibili.com/bangumi/*` | `anime` | Video features on a best-effort basis |
+| `www.bilibili.com/festival/*` | `festival` | Video features on a best-effort basis |
+| `www.bilibili.com/opus/*` | `opus` | Video and comment features on a best-effort basis |
+| `search.bilibili.com/*` | `search` | Thumbnail labels |
+| `t.bilibili.com/*` | `dynamic` | Dynamic-feed enhancements and comment features on a best-effort basis |
+| `space.bilibili.com/*` | `channel` | Dynamic-feed enhancements and thumbnail labels on a best-effort basis |
 
-## 4. 数据流与优先级
+## 4. Whole-Video Label Priority
 
-整视频判断优先级：
+Whole-video judgment uses this order:
 
-1. SponsorBlock `full` 标签。
-2. 整视频标签接口。
-3. 用户手动本地保留/忽略。
-4. 本地页面信号。
-5. 本地评论信号。
+1. SponsorBlock `full` segment.
+2. Whole-video label API summary.
+3. User-kept or user-ignored local record.
+4. Local page signal.
+5. Local comment signal.
 
-实际运行中，上游解析中或上游已命中时，本地推理短路。本地手动记录优先于自动信号，低置信度自动信号不持久化。
+When upstream data is present, local inference does not override it. Manual local records have priority over automatic local signals.
 
-## 5. 配置与存储
+## 5. Configuration And Storage
 
-配置源：`src/constants.ts` 的 `DEFAULT_CONFIG`。
+Main config comes from `DEFAULT_CONFIG` in `src/constants.ts`.
 
-主要存储键：
+Primary Tampermonkey storage keys:
 
 - `bsb_tm_config_v1`
 - `bsb_tm_stats_v1`
@@ -82,30 +82,27 @@
 - `bsb_tm_comment_feedback_v1`
 - `bsb_tm_vote_history_v1`
 
-`bsb_tm_*` 是历史兼容前缀，不随用户可见名称迁移。
+The `bsb_tm_*` prefix is kept for compatibility and does not follow the visible project name.
 
-## 6. 网络与安全边界
+## 6. Network And Safety Boundaries
 
-网络入口：
+- The SponsorBlock service URL is configurable and defaults to `https://www.bsbsb.top`.
+- API requests include `x-ext-version` and do not manually forge `Origin`.
+- The native request guard only returns synthetic responses for a narrow list of topbar badge requests after the compact header is mounted.
+- It does not block avatar, search, login, playback, comment, dynamic-feed, or risk-control requests.
+- Comment author profile requests are used only as optional promotion-detection hints and fail silently.
+- MBGA is a known-rule, best-effort feature. It is not a complete privacy shield or complete PCDN disabling tool.
 
-- SponsorBlock 服务地址可配置，默认 `https://www.bsbsb.top`。
-- 上游 API 请求带 `x-ext-version`，不手动伪造 `Origin`。
-- 紧凑顶栏启用后，原生请求 guard 只对当前窄名单内的顶部栏 badge 请求返回合成响应；这些请求是否始终冗余仍需随 B 站实验流复核。guard 不阻断头像、搜索、登录态、播放、评论、动态和风控请求。
-- 评论作者资料接口用于辅助托评判断，失败时无感回退。
-- MBGA 只对少量已知页面网络/行为路径做 best-effort 处理，不能当成完整隐私防护或完整 PCDN 禁用能力。
-- V0312 MBGA 现实证据只支持 sampled known-host best-effort / partial cleanup 边界，不授权默认策略、规则或公开 claim 扩张。
+Safety boundaries:
 
-安全边界：
+- Runtime code avoids dynamic code execution.
+- DOM output prefers `createElement` and `textContent`.
+- `@connect *` exists because the SponsorBlock service URL is configurable and should remain visible to users.
+- `unsafeWindow` is limited to the MBGA rule module.
 
-- 运行时代码避免动态代码执行。
-- DOM 输出优先使用 `createElement` 和 `textContent`。
-- `@connect *` 来自可配置服务地址，是发布时需要透明说明的权限边界。
-- `unsafeWindow` 仅限 MBGA 规则模块使用。
-- 所有真实安全结论必须结合 Safari 主窗口采样。
+## 7. Validation Entry Points
 
-## 7. 测试入口
-
-基础验证：
+Basic validation:
 
 ```bash
 npm run evaluate:recognition
@@ -116,25 +113,19 @@ npm run verify:compat
 git diff --check
 ```
 
-Safari 辅助验证：
+Safari validation helpers:
 
 ```bash
 npm run validate:safari
 npm run investigate:safari-player -- --sample-id <id> --window-type existing_logged_in_window --login-state logged_in
 ```
 
-Playwright smoke 只能作为辅助：
+Automated browser smoke checks are useful compatibility signals, but release confidence still requires a logged-in Safari main-window pass for the features being shipped.
 
-```bash
-npm run smoke:bilibili
-npm run capture:bilibili
-```
+## 8. Iteration Notes
 
-## 8. 迭代注意事项
-
-- 高冲突文件：`src/core/controller.ts`、`src/core/config-store.ts`、`src/types.ts`、`src/ui/styles.ts`、`src/ui/panel.ts`。
-- 识别策略改动必须同步样本评估和误杀保护。
-- UI 改动必须避免接管原生布局。
-- 网络拦截必须先有请求归因和回退策略，不允许宽泛黑名单。
-- `dist` 只由构建产生，不应手工编辑。
-- 派生工作树产物先进入 integration，再统一回归和 Safari 验收。
+- High-conflict files include `src/core/controller.ts`, `src/core/config-store.ts`, `src/types.ts`, `src/ui/styles.ts`, and `src/ui/panel.ts`.
+- Recognition changes should update sample evaluation and false-positive protections.
+- UI changes should avoid taking over native Bilibili layout.
+- Network interception changes require request attribution and rollback behavior.
+- `dist` is generated by the build and should not be hand-edited.

@@ -1,17 +1,17 @@
 # Contributing
 
-## 开发目标
+## Development Goals
 
-这个仓库的目标不是把原扩展逐按钮搬到 userscript，而是在 Tampermonkey 约束下，稳定交付最常用、最有价值的 Bilibili QoL Core 体验。
+Bilibili QoL Core is not a one-to-one port of every upstream browser extension control. The goal is to deliver the most useful Bilibili quality-of-life features reliably within Tampermonkey userscript constraints.
 
-开发时优先级:
+Development priorities:
 
-1. 真实页面能稳定识别视频上下文并正确处理片段。
-2. 首页、动态页、评论区等高频场景不因 Bilibili 的 SPA 和 shadow DOM 而漏处理。
-3. 误判和误伤要可恢复，交互必须留有显式开关和回退路径。
-4. 任何新增能力都必须附带对应测试或 smoke 覆盖。
+1. Real video pages should identify video context consistently and handle segments correctly.
+2. High-traffic surfaces such as the home page, dynamic feed, and comment areas should tolerate Bilibili SPA navigation and shadow DOM changes.
+3. False positives and accidental hiding must be reversible through explicit controls and fallback paths.
+4. New behavior should include focused tests or browser smoke coverage.
 
-## 本地开发
+## Local Development
 
 ```bash
 npm ci
@@ -20,47 +20,39 @@ npm test
 npm run build
 ```
 
-生成产物:
+Build artifact:
 
 - `dist/bilibili-qol-core.user.js`
 
-## 真实页面回归
+## Browser Smoke Checks
 
-本仓库保留一个本地 smoke:
+The repository includes a local Bilibili smoke helper:
 
 ```bash
 npm run smoke:bilibili
 ```
 
-这个 smoke 主要用于辅助采样和快速观察，不作为 QoL Core 的最终真实验收结论。
+This smoke check is useful for sampling and quick observation, but it is not the final release signal for QoL Core runtime behavior.
 
-默认会调用本机 Chrome:
+By default it uses the local Chrome executable:
 
 - `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
 
-如果要换浏览器路径，可设置:
+Set `BSB_SMOKE_BROWSER_PATH` to use a different browser path.
 
-- `BSB_SMOKE_BROWSER_PATH`
+Current smoke coverage includes:
 
-当前 smoke 至少覆盖:
+- home-page floating entry button
+- home and dynamic-feed style content filtering
+- video-page SponsorBlock request flow
+- top-level comment filtering
+- comment reply filtering
 
-- 首页浮动入口按钮
-- 首页/动态样式内容过滤
-- 视频页 SponsorBlock 请求链路
-- 评论主楼过滤
-- 评论回复过滤
+## Safari Release Validation
 
-## Safari 验收要求
+Safari with Tampermonkey is the primary runtime environment for this userscript.
 
-对 QoL Core 来说，Safari 才是唯一真实运行环境。
-
-因此：
-
-- Chrome smoke 只能作为辅助对照
-- Safari 自动化验证只能作为辅助证据
-- 最终验收必须回到 Safari 主窗口、已登录、已安装脚本的真实环境
-
-推荐最小链路：
+Before a runtime release, contributors should run:
 
 ```bash
 npm run check
@@ -69,20 +61,16 @@ npm run build
 npm run validate:safari
 ```
 
-然后按 [docs/SAFARI_ACCEPTANCE_V0311.md](./docs/SAFARI_ACCEPTANCE_V0311.md) 执行主窗口人工采样。`docs/SAFARI_ACCEPTANCE_V037.md` 只保留为历史清单。
+Automated checks are useful compatibility signals. A runtime release should also receive a manual Safari main-window smoke pass with the userscript installed and enabled in Tampermonkey, using a logged-in browser profile when the behavior depends on Bilibili account state. This manual pass should cover the main supported surfaces touched by the change, especially video pages, comment areas, dynamic-feed filtering, settings access, and visible fallback controls.
 
-## 测试要求
+## Test Expectations
 
-- `test/video-context.test.ts`
-  负责视频 ID / `cid` / `page` 解析场景
-- `test/navigation.test.ts`
-  负责 SPA 路由变化监听
-- `test/comment-filter.test.ts`
-  负责主评论和回复评论过滤
-- `test/dynamic-filter.test.ts`
-  负责动态广告识别
+- `test/video-context.test.ts` covers video ID, `cid`, and `page` parsing.
+- `test/navigation.test.ts` covers SPA route-change handling.
+- `test/comment-filter.test.ts` covers top-level comments and comment replies.
+- `test/dynamic-filter.test.ts` covers dynamic-feed commercial-content recognition.
 
-提交前至少应通过:
+Before submitting changes, at minimum run:
 
 ```bash
 npm run check
@@ -90,24 +78,24 @@ npm test
 npm run build
 ```
 
-涉及真实页面逻辑、Bilibili DOM 结构、评论区、播放器或 MBGA 改动时，额外要求:
+For changes involving live page behavior, Bilibili DOM structure, comments, player behavior, or MBGA cleanup, also run:
 
 ```bash
 npm run smoke:bilibili
 npm run validate:safari
 ```
 
-## 发布流程
+## Release Flow
 
-1. 确认 `main` 上 `check/test/build` 全绿。
-2. 更新版本号。
-3. 构建 `dist/bilibili-qol-core.user.js`。
-4. 打 `v*` tag。
-5. 推送 tag 触发 GitHub Actions release。
+1. Confirm `main` passes `check`, `test`, and `build`.
+2. Update the version when a new runtime version is intentionally being prepared.
+3. Build `dist/bilibili-qol-core.user.js`.
+4. Create the matching `v*` tag.
+5. Push the tag to trigger the GitHub Actions release workflow.
 
-## 代码风格
+## Code Style
 
-- 优先写可测试的纯函数，再接 DOM 控制器。
-- 涉及 Bilibili 页面结构时，优先通过小范围 helper 隔离选择器和 shadow DOM 访问。
-- 对网络数据一律做显式白名单校验，不信任远端 payload。
-- 对误判风险高的功能，优先提供 `label` 模式，再考虑 `hide`。
+- Prefer testable pure functions before DOM controllers.
+- Isolate Bilibili page selectors and shadow DOM access behind small helpers.
+- Validate remote payloads through explicit allowlists.
+- For behavior with high false-positive risk, prefer `label` mode before `hide` mode.

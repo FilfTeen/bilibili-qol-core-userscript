@@ -1,82 +1,74 @@
-# 误差与可靠性说明
+# Reliability
 
-Bilibili QoL Core 是辅助工具，不是平台官方判断或商业合作事实来源。本说明用于帮助用户理解哪些结果可以较放心参考，哪些结果必须谨慎。
+Bilibili QoL Core is an auxiliary tool. It is not an official platform judgment, ad-disclosure authority, or privacy product. This page explains which signals are stronger and which should be treated carefully.
 
-## 较可靠
+## Stronger Signals
 
-- SponsorBlock 已收录的时间片段。
-- SponsorBlock 已收录的整视频 `full` 标签。
-- Bilibili 评论 payload 明确给出的属地字段。
-- 用户手动保留或忽略的本地整视频标签。
+- SponsorBlock recorded time segments.
+- SponsorBlock community `full` labels.
+- Bilibili payload fields that the page already exposes, such as comment IP-location text.
+- User-kept or user-ignored local whole-video records.
 
-这些信息有明确来源或明确用户意图，但仍可能受接口状态、页面上下文和脚本版本影响。
+These signals have clearer sources or explicit user intent. They can still be affected by API state, page context, browser behavior, and script version.
 
-V0312 SponsorBlock Core Safari smoke 已验证 sampled Safari page 的 segment load、preview bar、auto-skip 和 undo；keep-current 仍为 partial，mute / POI 未验证。该 smoke 不等于完整 Safari release acceptance。
+## Medium-Confidence Signals
 
-## 中等可靠
+- Whole-video label API summaries.
+- Whole-video thumbnail badges on home, search, history, and recommendation cards.
+- Comment product-card detection.
+- Strong purchase-flow or promotion signals in comments and dynamic posts.
+- MBGA known-rule cleanup for selected URL, host, UI, and PCDN/WebRTC paths.
 
-- 整视频标签接口返回的标签。
-- 首页、搜索、历史、推荐卡片上的整视频胶囊。
-- 评论区商品卡广告识别。
-- 评论/动态中带有完整购买闭环的强导流信号。
-- MBGA 对少量已知追踪参数、已知遥测 host 和部分 PCDN/WebRTC 路径的 best-effort 处理。
+Whole-video label API summaries are display-only and do not include a votable community UUID.
 
-整视频标签接口结果来自上游摘要接口，但没有可投票 UUID；它能提示分类，不等于可提交社区反馈。
+MBGA only means that the script tries to reduce selected known page noise. It does not guarantee full telemetry blocking, complete PCDN disabling, or complete Bilibili page cleanup.
 
-MBGA 相关能力只能说明脚本尝试按已知规则减少部分页面噪音。它不等于隐私防护产品，也不保证完整阻断遥测、完整禁用 PCDN 或完整清理 B 站页面生态。
+## Heuristic Signals
 
-V0312 MBGA Safari sampling 已收束为 `PASS WITH CAVEAT`，但 HAR 不可用，网络结论仍是 partial / below-HAR-grade，不应据此升级 MBGA 能力描述。
+These features can produce false positives or false negatives:
 
-## 启发式能力
+- Local page title, description, and tag inference.
+- Comment text promotion and suspicious-reply detection.
+- Dynamic-feed commercial-content detection.
+- Local learning after automatic inference.
 
-以下能力存在误判和漏判：
+QoL Core prioritizes reducing false positives over maximizing recall.
 
-- 本地页面标题、简介、标签推断出的整视频商业性质。
-- 评论文本广告、托评、玩梗和反讽识别。
-- 动态页商业内容识别。
-- 本地学习后的自动判断。
+## Common Error Types
 
-QoL Core 的策略优先降低误杀，而不是追求最高召回。
+- **False positive**: ordinary reviews, event notes, borrowed products, quoted ad language, or jokes can look commercial.
+- **False negative**: new promotion phrasing, subtle steering, and joking ads may be missed.
+- **Temporary mismatch**: title badges, thumbnail badges, comment hints, and local records may not update at exactly the same moment.
+- **Page compatibility issue**: Bilibili DOM, Shadow DOM, APIs, or experiment changes can temporarily break selectors.
+- **Environment issue**: login state, permission, API rate limit, Safari isolation, or browser policy can affect behavior.
 
-V0312 评论 / 动态样本治理已关闭为 `Blocked / Not Verified`。本轮只收束了样本治理、隐私边界和 Safari/Tampermonkey readiness blocker，没有验证评论/动态 Safari 行为、广泛误杀安全或评论驱动的本地学习闭环。
+## Local Learning Boundary
 
-## 常见误差
+Local learning affects only the current browser and current script instance.
 
-- **误判**：普通测评、活动记录、借测、引用广告话术被当成商业内容。
-- **漏判**：新话术、隐晦导流、语气像玩笑的真实广告未命中。
-- **阶段性不一致**：标题胶囊、缩略图胶囊、评论线索和本地标签短时间内未完全同步。
-- **页面兼容性误差**：Bilibili DOM、Shadow DOM、接口或实验流变化导致某些增强暂时失效。
-- **环境误差**：未登录、权限不足、接口风控、Safari 自动化窗口隔离都会影响采样结论。
+It does not represent:
 
-## 本地学习边界
+- SponsorBlock community consensus.
+- Bilibili official classification.
+- A creator's actual sponsorship status.
+- Results reproducible by other users.
 
-本地学习只影响当前浏览器中的当前脚本实例。
+If you keep or ignore the wrong local label, the script will respect that record until you delete it or change the relevant setting.
 
-它不代表：
+## Upstream Feedback Boundary
 
-- SponsorBlock 社区共识。
-- Bilibili 官方标记。
-- 创作者真实商业合作事实。
-- 其他用户可复现的结果。
+- Real community `full` labels can be voted on.
+- `video-label:*` summaries cannot be voted on directly.
+- `local-signal:*` labels are local and are not sent upstream.
+- `429` means the request was rate-limited and is not treated as success.
 
-如果你错误地保留或忽略了本地判断，后续本地推理会尊重该记录，直到你手动纠正或恢复默认设置。
+## Recommended Use
 
-V0312 Local Learning 只验证 isolated profile 中 page-heuristic 本地视频标签写入、控制台可见性、删除和 panel-derived refresh cleanup。current-profile restore、raw restore、organic comment scanning、comment feedback lock closure 和广泛误杀安全仍未验证。
+- Start comment and dynamic-feed features in marking mode.
+- Treat local labels as suggestions, not facts.
+- Use video context, creator notes, and actual comment context for disputed cases.
+- If a feature breaks native page behavior, disable the related setting first and retest.
 
-## 上游反馈边界
+## Safari Validation
 
-- 真实社区 `full` 标签可以投票。
-- `video-label:*` 是整视频标签接口摘要，不能直接投票。
-- `local-signal:*` 是本地推理结果，不会发送到上游。
-- `429` 表示请求被限制或过快，不会再被当成提交成功。
-
-## 推荐使用策略
-
-- 评论和动态先使用 `仅标记，不隐藏`。
-- 对本地标签保持谨慎，不要把它当成事实判决。
-- 对争议内容，以视频上下文、作者说明和实际评论语境为准。
-- 发现明显误判时，优先使用本地忽略或降低过滤强度，而不是直接关闭全部脚本。
-
-## Safari 验收提醒
-
-真实可用性必须在已登录 Safari 主窗口中确认。Chrome、Playwright、Safari 自动化窗口和未登录游客态只能作为辅助证据。
+Safari is the primary validation environment. Automated browser checks and non-Safari browsers can catch compatibility issues, but logged-in Safari main-window behavior remains the reference for release confidence.

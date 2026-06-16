@@ -1,99 +1,84 @@
 # Bilibili QoL Core (v0.3.11)
 
-> 面向 Safari + Tampermonkey 的 Bilibili 低侵入增强 userscript：整合 SponsorBlock 片段、整视频性质标签、评论/动态识别、本地推理学习、MBGA 生态噪音压制（best-effort）和 Apple 风格控制台。
+> A low-intrusion Bilibili enhancement userscript for Safari + Tampermonkey. It combines SponsorBlock segment handling, whole-video labels, comment and dynamic-feed hints, local learning controls, best-effort MBGA cleanup, and a compact settings console.
 
-Bilibili QoL Core 的目标不是接管 B 站页面，而是在尽量少改动原生 DOM/CSS 的前提下补充实用能力。所有本地推理都保持纯本地、可解释、可回退；真实验收环境以已登录的 Safari 主窗口为准。
+Bilibili QoL Core is designed to add useful signals without taking over the original Bilibili page. Local inference stays local, explainable, and reversible. Safari with Tampermonkey is the primary validation environment; Chromium-based Tampermonkey browsers are compatibility targets.
 
-`v0.3.11` 以 Local Learning Management 为主功能，补充本地学习记录查看、删除和清空能力；同时加入 MBGA decision telemetry、native request guard 诊断快照、诊断样本 URL 归一化和 Safari 证据文档。MBGA 仍是 best-effort / known-rule / partial cleanup，PCDN / WebRTC 路径压制仍是实验子项。
+`v0.3.11` focuses on Local Learning Management, diagnostic transparency, URL normalization for diagnostic samples, and conservative MBGA behavior. MBGA remains a known-rule, best-effort cleanup feature. Experimental PCDN / WebRTC handling stays off by default for new users.
 
-## 核心能力
+## Core Features
 
-- **SponsorBlock 片段处理**：按 BVID hash-prefix 请求片段，支持自动跳过、手动提示、静音、高光点和进度条预览。V0312 Safari smoke 已验证 sampled page 的 segment load、preview bar、auto-skip 和 undo；keep-current 仍为 partial，mute / POI 未验证。
-- **整视频标签**：综合社区 `full` 片段、整视频标签接口、本地页面/评论信号和用户反馈，在标题与缩略图上显示胶囊标签。
-- **评论区增强**：识别商品卡、导流话术、可疑托评和回复层广告，支持仅标记或折叠，并显示 B 站 payload 自带 IP 属地。
-- **动态页增强**：对首页、动态页、空间页中的可疑商业动态进行标记或折叠，优先降低误杀。
-- **本地推理与学习**：上游无整视频记录时补充本地判断；用户可保留或忽略本地判断。
-- **低侵入 UI**：标题胶囊、缩略图胶囊、紧凑视频顶栏、通知浮窗和 QoL Core 控制台尽量不破坏原生布局。
-- **MBGA 生态噪音压制（best-effort）**：基于少量已知规则尝试减少部分遥测/追踪噪音，并补充低侵入页面小修。PCDN / WebRTC 路径压制为实验子项，新用户默认关闭；它不是完整隐私防护或完整 PCDN 禁用工具。
+- **SponsorBlock segment handling**: fetches segments by BVID hash prefix and supports skip, mute, point-of-interest highlights, preview bars, skip notices, undo, and keeping the current segment.
+- **Whole-video labels**: combines community `full` segments, video-label API summaries, page signals, comment signals, and local user choices to show title and thumbnail labels.
+- **Comment enhancements**: marks or folds likely commercial comments, product-card comments, suspicious promotion patterns, and reply-layer ads. It can also show Bilibili-provided IP location text when the page exposes it.
+- **Dynamic-feed enhancements**: marks or folds likely commercial dynamic posts on supported home, dynamic, and space pages while prioritizing false-positive reduction.
+- **Local inference and learning**: fills gaps when upstream data is unavailable and lets users keep, ignore, delete, or clear local video learning records.
+- **Low-intrusion UI**: title badges, thumbnail badges, compact video header, notices, inline feedback, and the QoL Core console are added with minimal layout disruption.
+- **MBGA cleanup**: applies a small set of known rules to reduce selected network, UI, and behavior noise. It is not a complete privacy product, telemetry blocker, or PCDN disabling tool.
 
-## 安装
+## Installation
 
 ### Safari + Tampermonkey
 
-1. 从 App Store 安装 Tampermonkey for Safari。
-2. 打开安装链接：[bilibili-qol-core.user.js](https://github.com/FilfTeen/bilibili-qol-core-userscript/raw/main/dist/bilibili-qol-core.user.js)。
-3. 在 Tampermonkey 安装确认页点击 `Install`。
-4. 打开支持的 Bilibili 页面，并确认脚本已启用。
-5. 通过 Tampermonkey 菜单的 `打开 QoL Core 控制台`、视频页标题胶囊或播放器盾牌按钮进入设置。
+1. Install Tampermonkey for Safari from the App Store.
+2. Open the install link: [bilibili-qol-core.user.js](https://github.com/FilfTeen/bilibili-qol-core-userscript/raw/main/dist/bilibili-qol-core.user.js).
+3. Click `Install` on the Tampermonkey confirmation page.
+4. Open a supported Bilibili page and confirm that the userscript is enabled.
+5. Open settings through the Tampermonkey menu item `打开 QoL Core 控制台`, the video title badge, or the player shield button.
 
-如果 Safari 只把脚本打开成文本页，可以在 `Tampermonkey Dashboard -> Utilities -> Import from URL` 手动导入 raw 链接。
+If Safari opens the script as text, import the raw URL manually from `Tampermonkey Dashboard -> Utilities -> Import from URL`.
 
-### 其他 Tampermonkey 浏览器
+### Other Tampermonkey Browsers
 
-Chrome 等浏览器可使用同一 userscript 安装链接。当前真实验收环境以 Safari 为准，Chrome 只作为兼容目标。
+Chrome and other Tampermonkey browsers can use the same userscript link. Safari remains the primary validation environment.
 
-## 支持页面
+## Supported Pages
 
 - `https://www.bilibili.com/*`
 - `https://search.bilibili.com/*`
 - `https://t.bilibili.com/*`
 - `https://space.bilibili.com/*`
 
-视频能力重点覆盖 `/video/*`、`/list/*`、`/medialist/play/*`、`/bangumi/*`、`/festival/*` 和 `/opus/*`，其中非常规视频页按 best effort 处理。
+Video features focus on `/video/*`, `/list/*`, `/medialist/play/*`, `/bangumi/*`, `/festival/*`, and `/opus/*`. Non-standard video pages are handled on a best-effort basis.
 
-## 文档导航
+## Documentation
 
-- [工程蓝图](./docs/BLUEPRINT.md)：功能、实现、状态、风险和验收入口的总索引。
-- [工程文件索引](./docs/ENGINEERING_FILE_INDEX.md)：说明 README、蓝图、技术文档、审计记录、发布说明和历史证据的用途与当前性。
-- [v0.3.11 主线程交接手册](./docs/MAIN_THREAD_HANDOFF_V0311.md)：当前主线状态、已完成事项、保留风险和下一任主线程接力入口。
-- [v0.3.11 发布说明](./docs/RELEASE_NOTES_V0311.md)：本地学习管理、MBGA 诊断证据和发布 caveats。
-- [v0.3.11 最终 Safari 验收清单](./docs/SAFARI_ACCEPTANCE_V0311.md)：发布前必须执行的主窗口实机检查。
-- [V0312 MBGA 现实证据报告](./docs/V0312_MBGA_REALITY_EVIDENCE.md)：docs-only evidence caveat，不是发布说明；结论为 `PASS WITH CAVEAT`，不升级 MBGA claim。
-- [V0312 Local Learning 现实证据报告](./docs/V0312_LOCAL_LEARNING_REALITY_EVIDENCE.md)：docs-only evidence caveat，不是发布说明；只收束 isolated profile 下的窄范围本地学习证据边界。
-- [V0312 SponsorBlock Core Safari Smoke 证据报告](./docs/V0312_SPONSORBLOCK_CORE_SAFARI_SMOKE_EVIDENCE.md)：docs-only smoke evidence，不是发布说明；结论为 `PASS WITH CAVEAT / PARTIAL`。
-- [V0312 评论 / 动态样本治理证据报告](./docs/V0312_COMMENT_DYNAMIC_SAMPLE_GOVERNANCE_EVIDENCE.md)：docs-only governance evidence，不是发布说明；结论为 `Blocked / Not Verified`，不证明评论/动态 Safari 行为。
-- [V0312 公开暴露面安全/隐私审计](./docs/SECURITY_PRIVACY_EXPOSURE_AUDIT_V0312.md)：docs-only closure report；记录私有治理资产 purge 和本机路径 scrub 的公开结论。
-- [使用手册](./docs/USER_GUIDE.md)：面向用户的安装、配置和操作说明。
-- [能力说明](./docs/CAPABILITIES.md)：QoL Core 已实现能力和不提供能力。
-- [技术文档](./docs/TECHNICAL.md)：模块结构、运行链路和工程约束。
-- [上游对接审计](./docs/UPSTREAM_ALIGNMENT_AUDIT.md)：与 BilibiliSponsorBlock / SponsorBlock API 的差异和修复点。
-- [误差与可靠性说明](./docs/RELIABILITY.md)：哪些判断可靠，哪些必须谨慎。
-- [v0.3.11 现实能力审计](./docs/V0311_REALITY_AUDIT.md)：区分自动化证据、Safari 辅助证据和仍需补采的主窗口证据。
-- [v0.3.11 文档真实性修复记录](./docs/V0311_DOCS_TRUTHFULNESS_PASS.md)：记录 MBGA、PCDN、遥测和 Safari 验收表述的降级边界。
-- [v0.3.7 历史审计记录](./docs/AUDIT_V037.md)：`v0.3.7` 功能版发布前的代码、安全、UI 和分支健康审计结果。
-- [v0.3.7 / v0.3.8 / v0.3.9 / v0.3.10 / v0.3.11 分支健康记录](./docs/BRANCH_HEALTH_V037.md)：发布后 main、tag、integration 和历史分支状态。
-- [v0.3.7 历史 Safari 验收清单](./docs/SAFARI_ACCEPTANCE_V037.md)：功能版真实 Safari 主窗口验收要求；`v0.3.8` 需额外确认更新 URL 迁移。
+- [Blueprint](./docs/BLUEPRINT.md): product structure, implemented capabilities, data boundaries, and validation entry points.
+- [User Guide](./docs/USER_GUIDE.md): installation, configuration, and daily use.
+- [Capabilities](./docs/CAPABILITIES.md): what QoL Core does and does not provide.
+- [Technical Overview](./docs/TECHNICAL.md): module layout, runtime model, storage, and safety constraints.
+- [Reliability](./docs/RELIABILITY.md): which signals are stronger, which are heuristic, and how to use them carefully.
+- [Upstream Alignment](./docs/UPSTREAM_ALIGNMENT_AUDIT.md): differences from BilibiliSponsorBlock and SponsorBlock API behavior.
+- [v0.3.11 Release Notes](./docs/RELEASE_NOTES_V0311.md): user-facing changes and caveats for the current release line.
 
-## 配置与本地数据
+## Configuration And Local Data
 
-主要配置保存在 Tampermonkey 存储键 `bsb_tm_config_v1`。`bsb_tm_*` 是历史兼容前缀，升级到 Bilibili QoL Core 后不会迁移，以免破坏已有用户数据。
+Main configuration is stored in Tampermonkey under `bsb_tm_config_v1`. The historical `bsb_tm_*` prefix is preserved for compatibility.
 
-配置覆盖：
+Configurable areas include:
 
-- SponsorBlock 服务地址、缓存、提示时长、最短处理时长。
-- 分类处理模式和分类配色。
-- 标题、缩略图、评论、动态标签透明度。
-- 评论过滤、评论属地、动态过滤。
-- 紧凑视频顶栏和灰字搜索行为。
-- MBGA 已知网络噪音压制、实验 PCDN / WebRTC 路径 best-effort 压制、URL 清理和 UI 简化。新用户默认不开启 PCDN / WebRTC 压制，已有用户的显式设置会保留。
+- SponsorBlock service URL, cache, notice duration, and minimum segment length.
+- Segment category actions and colors.
+- Title, thumbnail, comment, and dynamic-feed label opacity.
+- Comment filtering, comment IP-location display, and dynamic-feed filtering.
+- Compact video header and grey-keyword search behavior.
+- MBGA known-rule cleanup, experimental PCDN / WebRTC handling, URL cleanup, and UI simplification.
 
-其他本地数据包括统计、TTL 缓存、本地整视频标签、评论反馈锁定和整视频投票历史。详见 [docs/BLUEPRINT.md](./docs/BLUEPRINT.md)。
+Other local data includes skip statistics, TTL caches, local whole-video labels, comment feedback locks, and whole-video vote history. Local learning data affects only the current browser and script instance.
 
-## 与原扩展的主要差异
+## Main Differences From The Upstream Extension
 
-| 项目 | 原扩展 | Bilibili QoL Core |
+| Area | Upstream extension | Bilibili QoL Core |
 | --- | --- | --- |
-| 分发形式 | 浏览器扩展 | Tampermonkey 单文件 userscript |
-| 运行模型 | background + content scripts | 页内脚本 + 页面桥接 |
-| 设置入口 | popup / options 页面 | QoL Core 控制台、标题胶囊、播放器按钮、Tampermonkey 菜单 |
-| 片段投稿 | 支持 | 暂不支持 |
-| 投票 | 支持完整流程 | 仅真实社区 `full` 标签可投票；整视频标签接口结果只展示 |
-| Bilibili 评论/动态增强 | 非核心 | 支持本地启发式识别和标记/折叠 |
-| MBGA 生态噪音压制 | 不适用 | 可选启用，best-effort / known-rule / partial cleanup |
+| Distribution | Browser extension | Tampermonkey userscript |
+| Runtime model | Background + content scripts | In-page script + page bridge |
+| Settings entry | Popup / options page | QoL Core console, title badge, player button, Tampermonkey menu |
+| Segment submission | Supported | Not supported |
+| Voting | Full upstream flow | Only real community `full` labels can be voted on |
+| Bilibili comments and dynamics | Not core scope | Local heuristic labels and folding controls |
+| MBGA cleanup | Not applicable | Optional, known-rule, best-effort cleanup |
 
-开发者诊断报告会额外输出 MBGA decision telemetry 与 native request guard snapshot 摘要，便于在 Safari 主窗口采样时区分 observed、blocked、synthetic、rewritten、stubbed 等行为。报告中的页面 URL 和样本 URL 只保留 `origin + pathname`。
-
-## 开发与验证
+## Development And Verification
 
 ```bash
 npm ci
@@ -105,30 +90,25 @@ npm run verify:compat
 npm run validate:safari
 ```
 
-构建产物：
+Build artifact:
 
 - `dist/bilibili-qol-core.user.js`
 
-辅助采样产物：
+Real browser validation should be performed in a logged-in Safari main window after reloading the userscript in Tampermonkey. Automated browser checks are useful compatibility signals but do not replace Safari validation for release decisions.
 
-- `output/playwright/*`
-- `output/safari/*`
+## Disclaimer
 
-真实验收必须在已登录 Safari 主窗口中重载脚本后进行。Playwright、Chrome 或 Safari 自动化窗口只能作为辅助证据。
+Read [DISCLAIMER.md](./DISCLAIMER.md) before use. In short:
 
-## 免责声明
+- This project is not an official product of Bilibili, SponsorBlock, Tampermonkey, or the upstream extension.
+- Comment IP-location display only shows fields already exposed by the current Bilibili page or payload.
+- Local commercial-content judgment is an auxiliary signal, not SponsorBlock community consensus or a Bilibili official conclusion.
+- Page structure, APIs, login state, permissions, experiments, and browser policy changes can affect behavior.
 
-使用前请阅读 [DISCLAIMER.md](./DISCLAIMER.md)。简要说明：
+## Credits
 
-- 本项目不是 Bilibili、SponsorBlock、Tampermonkey 或上游扩展的官方产品。
-- 评论属地只展示 Bilibili 当前页面或 payload 已公开提供的字段，不推断真实位置。
-- 本地商业判断是辅助信号，不代表 SponsorBlock 社区共识或 Bilibili 官方结论。
-- 页面结构、接口、登录态、权限、实验流和浏览器策略变化都可能影响脚本表现。
+Bilibili QoL Core is maintained by Hush_. It is based on and inspired by [hanydd/BilibiliSponsorBlock](https://github.com/hanydd/BilibiliSponsorBlock) and public userscript adaptation ideas. See [NOTICE.md](./NOTICE.md) for source and license details.
 
-## 致谢
+## License
 
-Bilibili QoL Core 由 Hush_ 维护。本项目参考并派生自 [hanydd/BilibiliSponsorBlock](https://github.com/hanydd/BilibiliSponsorBlock)，并适配了公开 userscript 的部分思路。详细来源与许可证见 [NOTICE.md](./NOTICE.md)。
-
-## 许可证
-
-`GPL-3.0-only`。详见 [LICENSE](./LICENSE)。
+`GPL-3.0-only`. See [LICENSE](./LICENSE).

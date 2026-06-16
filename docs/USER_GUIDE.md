@@ -1,153 +1,107 @@
-# 使用手册
+# User Guide
 
-## 适用对象
+This guide covers daily use of Bilibili QoL Core v0.3.11.
 
-Bilibili QoL Core 面向在 Safari + Tampermonkey 中使用 Bilibili 的用户。它提供广告片段辅助跳过、整视频商业性质提示、评论/动态广告辅助识别、属地显示、本地学习和低侵入 UI 增强。
+## 1. Install
 
-## 安装与入口
+1. Install Tampermonkey for Safari.
+2. Open [bilibili-qol-core.user.js](https://github.com/FilfTeen/bilibili-qol-core-userscript/raw/main/dist/bilibili-qol-core.user.js).
+3. Confirm installation in Tampermonkey.
+4. Open a supported Bilibili page.
+5. Use the Tampermonkey menu item `打开 QoL Core 控制台` to open settings.
 
-1. 安装 Tampermonkey。
-2. 导入 `dist/bilibili-qol-core.user.js` 或 GitHub raw 安装链接。
-3. 打开支持的 Bilibili 页面。
-4. 从 Tampermonkey 菜单点击 `打开 QoL Core 控制台`，或在视频页点击标题胶囊/播放器盾牌按钮进入控制台。
+If Safari opens the script as plain text, import the raw URL in `Tampermonkey Dashboard -> Utilities -> Import from URL`.
 
-Tampermonkey 菜单只保留一个控制台入口，避免“打开”和“切换”同时出现造成混淆。
+## 2. Supported Pages
 
-## 推荐初始配置
+- Bilibili video pages.
+- Bilibili list, bangumi, festival, and opus pages on a best-effort basis.
+- Search pages.
+- Dynamic-feed pages.
+- Space pages.
 
-- 保持 `启用 Bilibili QoL Core` 开启。
-- 评论区过滤先用 `仅标记，不隐藏`。
-- 动态过滤先用 `仅标记，不隐藏`。
-- 评论区属地显示保持开启。
-- 本地判断以“辅助提示”为准，不要在没有观察样本前激进隐藏内容。
+Some non-standard page layouts may only receive part of the feature set.
 
-## 视频页
+## 3. SponsorBlock Segment Controls
 
-视频页包含：
+Open the QoL Core console and adjust category actions:
 
-- SponsorBlock 片段跳过。
-- 播放器进度条片段标记。
-- 标题前整视频标签。
-- 右侧推荐卡片缩略图标签。
-- 紧凑视频顶部栏。
+- `skip`: automatically skip the segment.
+- `mute`: mute during the segment.
+- `poi_highlight`: show a point-of-interest marker.
+- `full`: show whole-video nature labels.
+- Disabled categories are ignored.
 
-### 标题胶囊
+During playback, notices may offer:
 
-标题前出现胶囊时：
+- Undo skip.
+- Keep current segment.
+- Open settings.
 
-- 点击胶囊可查看分类说明。
-- 真实社区 `full` 标签可提交“标记正确 / 标记有误”到上游。
-- 整视频标签接口结果只提供分类摘要，没有可投票 UUID，因此不会显示为可上游投票。
-- 本地推理标签可选择保留或忽略，只影响当前浏览器。
-- 如果上游已有整视频标签，本地推理和评论反馈不会覆盖它。
+## 4. Whole-Video Labels
 
-### 跳过提示
+Labels may appear near the video title or on thumbnails. They can come from community `full` segments, whole-video label summaries, page signals, comment signals, or local records.
 
-当脚本检测到片段时，会按分类配置自动处理或提示：
+Use label feedback carefully:
 
-- `撤销`：回到刚跳过片段的开始处。
-- `保留本段`：本次保留当前片段，不再重复抢跳。
-- `立即跳过`：手动跳到片段结束。
+- Community `full` labels can be voted on when a real UUID is available.
+- API summary labels are display-only.
+- Local labels affect only your browser.
 
-### 紧凑视频顶部栏
+## 5. Comment And Dynamic-Feed Modes
 
-紧凑顶部栏用于在视频页提供搜索和账号入口：
+For comments and dynamic posts, start with marking mode. Folding mode is more aggressive and should be enabled only after you are comfortable with the recognition behavior.
 
-- 默认开启。
-- 在网页全屏、原生全屏和播放器全屏状态下隐藏。
-- 可选择是否显示 B 站原生搜索框中的灰字广告文案。
-- 可选择是否允许空输入时搜索当前可见灰字文案。
-- 启用后会对少量窄名单内的原生顶部栏 badge 请求返回合成响应；这些路径仍需随 B 站实验流复核。它不会处理头像、搜索、登录态和播放相关请求。
+If a comment or post is wrongly folded, use the restore control near the item when available.
 
-## 评论区
+## 6. Local Learning
 
-评论区增强包含：
+Local learning can remember your choices for a video.
 
-- 商品卡广告识别。
-- 导流、优惠、购买闭环等文本识别。
-- 可疑托评识别。
-- 评论属地显示。
-- 命中评论标记或折叠。
-- 本地视频标签反馈入口。
+In the console's help and feedback area, you can:
 
-过滤模式：
+- Review local video learning records.
+- Delete one local video record.
+- Clear all local video records after confirmation.
+- See the count and update time for comment feedback locks.
+- Clear comment feedback locks after confirmation.
 
-- `关闭`：不处理评论广告识别。
-- `仅标记，不隐藏`：显示标签，但不折叠内容。
-- `隐藏内容并保留提示`：折叠命中评论，并保留恢复入口。
+Deleting a local video record does not block future automatic local inference. If the same signals appear again, the script may infer the label again.
 
-评论属地只显示 Bilibili 当前 payload 已有的字段，不推断真实位置。
+## 7. MBGA Settings
 
-## 动态页
+MBGA is optional best-effort cleanup for selected page noise.
 
-动态页增强用于识别明显商业动态：
+Recommended defaults:
 
-- 商品卡动态。
-- 明确促销、领券、购买、导流内容。
-- 可疑商业转发。
+- Keep the main MBGA switch enabled only if you find the cleanup useful.
+- Keep experimental PCDN / WebRTC handling off unless you understand the tradeoff.
+- Re-check behavior after Bilibili page changes.
 
-普通活动、资讯、玩梗、引用、反讽和弱商业词会保守处理。建议先使用 `仅标记，不隐藏`。
+MBGA is not a full privacy or network-control product.
 
-## 标签配色与透明度
+## 8. Compact Header
 
-控制台可调整：
+The compact header is intended to reduce visual noise on video pages while preserving common search and account actions. It hides during fullscreen modes.
 
-- 分类标签颜色。
-- 评论广告标签颜色。
-- 评论属地标签颜色。
-- 标题、缩略图、评论、动态标签透明效果。
+If you see login, search, playback, or comment issues after enabling it, disable the compact header first and retest.
 
-颜色编辑器采用“草稿预览 + 显式应用”：
+## 9. Troubleshooting
 
-- 拖动颜色只更新预览，不立即保存。
-- 点击 `应用` 或按 Enter 才保存。
-- 出现未保存改动时才显示取消操作。
+Try these steps first:
 
-## MBGA
+1. Confirm Tampermonkey is enabled on the current page.
+2. Reload the page after updating the userscript.
+3. Check that the page URL is in the supported scope.
+4. Temporarily disable aggressive comment or dynamic-feed folding.
+5. Temporarily disable MBGA or compact header if a native page feature behaves oddly.
+6. Reinstall the current raw userscript if Tampermonkey appears to run an old copy.
 
-MBGA 默认开启，用于 best-effort 减少部分已知生态噪音。它不是完整隐私防护、完整遥测阻断或完整 PCDN 禁用工具。
+## 10. Data And Privacy Notes
 
-- 尝试减少部分已知追踪/遥测请求。
-- 对部分已知 PCDN/WebRTC 路径做 best-effort 压制；该子项是实验能力，新用户默认关闭，已有用户显式开关会保留。
-- 清理明确列入规则的追踪参数。
-- 动态页宽屏。
-- 视频裁切模式入口。
-- 页面灰度和复制限制修正。
+- Local learning records stay in the current browser's Tampermonkey storage.
+- Comment IP-location display only shows data already exposed by the current Bilibili page or payload.
+- Local inference is an auxiliary signal and should not be treated as a factual decision about a creator or video.
+- Configurable SponsorBlock service URLs require broad userscript connect permissions.
 
-如果出现播放、加载、直播、互动或页面兼容异常，可以先在控制台关闭 MBGA 或单独关闭相关子项。`v0.3.11` 仍保留 MBGA best-effort caveat，后续仍需要更多 Safari 主窗口 A/B 网络证据来校准默认策略。
-
-开发者诊断报告会包含 MBGA 最近决策记录和 native request guard 快照摘要，用于人工采样时判断规则是 observed、synthetic、blocked、rewritten、stubbed 还是 skipped。报告中的 URL 会去掉 query/hash，不应包含 token、用户 ID 或评论原文。
-
-## 维护工具
-
-控制台概览页提供：
-
-- `清理缓存`：清除 SponsorBlock 和整视频标签缓存，不删除配置。
-- `恢复默认设置`：恢复脚本配置。
-
-恢复默认设置有二阶段确认。点击后需要在短时间内再次确认，防止误触。
-
-控制台 `帮助 / 反馈` 页提供本地学习记录管理：
-
-- 查看当前浏览器保存的本地视频标签记录，包括手动保留、手动忽略和自动信号。
-- 删除单条本地视频标签记录，或二次确认后清空全部本地视频学习记录。
-- 查看评论反馈锁数量，或二次确认后清空评论反馈锁。
-
-这些操作只影响本机本脚本实例。删除本地记录不等于永久屏蔽：如果页面或评论线索后续再次命中，自动推理仍可能重新出现；如果你想长期压制当前视频，应优先使用标题胶囊或评论反馈入口中的 `忽略此视频` 语义。评论扫描触发的自动写入仍需要更多稳定真实评论样本验证，发布验收时不要把当前样本量误读为完整覆盖。
-
-## 可靠性提醒
-
-可以较放心参考：
-
-- SponsorBlock 已收录片段。
-- SponsorBlock 已收录 `full` 标签。
-- Bilibili payload 自带属地字段。
-
-需要自行甄别：
-
-- 整视频标签接口返回的分类摘要。
-- 本地推理得出的整视频标签。
-- 评论/动态启发式广告识别。
-- 评论反馈引发的本地学习结果。
-
-详细边界见 [RELIABILITY.md](./RELIABILITY.md)。
+For more detail, read [Reliability](./RELIABILITY.md).

@@ -1,154 +1,125 @@
-# 能力说明
+# Capabilities
 
-本文描述 Bilibili QoL Core v0.3.11 已实现的能力边界。`v0.3.11` 以 Local Learning Management 为主功能，并补充 MBGA / native request guard 诊断证据、诊断样本 URL 归一化和 Safari 证据文档。更细的实现索引见 [BLUEPRINT.md](./BLUEPRINT.md)。
+This page describes what Bilibili QoL Core v0.3.11 does, where the boundaries are, and what users should not expect from the script.
 
-## 1. SponsorBlock 片段能力
+## 1. SponsorBlock Segments
 
-QoL Core 会基于当前视频上下文请求 SponsorBlock 片段，并按分类配置执行。
+QoL Core requests SponsorBlock segments for the current video context and applies the configured action per category.
 
-支持的动作类型：
+Supported action types:
 
-- `skip`：跳过片段。
-- `mute`：片段期间静音，并在离开片段后恢复。
-- `poi_highlight`：高光点提示和跳转。
-- `full`：整视频性质标签，不作为时间段跳过处理。
+- `skip`: jump over a segment.
+- `mute`: mute during a segment and restore audio afterward.
+- `poi_highlight`: show and jump to a point of interest.
+- `full`: show whole-video nature; it is not treated as a timed skip segment.
 
-配套 UI：
+Related UI:
 
-- 播放器进度条片段预览条。
-- 跳过提示、撤销、保留本段等通知浮窗。
-- 播放器控制栏 SponsorBlock 盾牌按钮。
+- Preview bars on the player timeline.
+- Skip notices, undo, and keep-current actions.
+- Player control-bar shield button.
 
-V0312 SponsorBlock Core Safari smoke 证据边界：sampled Safari S1 page 上 `segment_load`、`preview_bar`、`auto_skip` 和 `undo` 已验证；`keep_current_segment` 仍为 `Partial`；`mute` 和 `POI` 未执行 / 未验证。该证据不是 v0.3.12 runtime release acceptance。
+Boundary: page structure, player behavior, login state, and API availability can affect segment behavior. Validate behavior in Safari after installing or updating the userscript.
 
-## 2. 整视频标签
+## 2. Whole-Video Labels
 
-整视频标签会综合以下来源：
+Whole-video labels combine:
 
-- SponsorBlock 社区 `full` 片段。
-- 整视频标签接口返回的分类摘要。
-- 本地页面标题、简介、标签线索。
-- 评论区商品卡、导流话术和可疑托评线索。
-- 用户本地保留或忽略记录。
+- SponsorBlock community `full` segments.
+- Whole-video label API summaries.
+- Local page title, description, and tag signals.
+- Comment product cards and promotion signals.
+- User-kept or user-ignored local records.
 
-上游已有整视频记录时，本地推理会主动让路，避免本地判断覆盖社区或接口结果。
+Display locations:
 
-显示位置：
+- Video title badge.
+- Thumbnail badges on supported list, search, history, and recommendation cards.
 
-- 视频标题前胶囊。
-- 首页、搜索、历史、播放页推荐等缩略图胶囊。
+Feedback boundary:
 
-反馈边界：
+- Only real community `full` segments from `skipSegments` include a votable UUID.
+- Whole-video label API summaries are display-only.
+- Local labels affect only the current browser and script instance.
 
-- 只有 SponsorBlock `skipSegments` 返回的真实社区 `full` 片段拥有可投票 UUID，可通过标题胶囊提交正确/有误反馈。
-- 整视频标签接口只提供分类摘要，不提供可投票 UUID，因此只能展示，不能直接提交上游投票。
-- 本地标签可通过标题胶囊或评论反馈入口保留/忽略，但只影响当前浏览器本地学习。
+## 3. Comment Enhancements
 
-## 3. 评论区增强
+QoL Core can mark or fold comments that look like:
 
-评论区能力包括：
+- Product-card comments.
+- Strong promotion or purchase guidance.
+- Suspicious promotional replies.
+- Commercial phrases matched by local heuristics.
 
-- 商品卡广告识别。
-- 文本导流、优惠、购买闭环识别。
-- 可疑托评识别。
-- 回复层广告识别。
-- 评论属地显示。
-- 命中评论的标记、折叠和恢复。
-- 本地整视频标签反馈入口。
+It can also show IP-location text that Bilibili already exposes in the current page payload.
 
-评论反馈入口是低侵入展开菜单，只在本地反馈可用且上游未命中整视频标签时出现。
+Boundary: comment recognition is conservative heuristic logic. It can miss subtle promotion and can misread jokes, quotes, reviews, or event descriptions. Start with marking mode before enabling folding.
 
-V0312 评论 / 动态样本治理已关闭为 `Blocked / Not Verified`：本轮没有验证 Safari 主窗口下的评论商品样本、评论负样本安全、organic comment scanning、comment feedback lock closure 或评论驱动的 Local Learning 写入。
+## 4. Dynamic-Feed Enhancements
 
-## 4. 动态页增强
+Dynamic-feed support marks or folds likely commercial dynamic posts on supported feed pages.
 
-动态页能力包括：
+Boundary: dynamic-feed recognition is heuristic and should be used as an aid, not as a factual judgment about the author or content.
 
-- 商品动态识别。
-- 活动、导流、促销和弱商业文本识别。
-- 标记或折叠可疑商业动态。
-- 保守处理普通活动、资讯、玩梗、引用和反讽语境。
+## 5. Local Learning Management
 
-动态识别和评论识别共用商业意图口径，但页面接入层保持分离。
+Local learning helps fill gaps when upstream whole-video data is unavailable.
 
-V0312 评论 / 动态样本治理没有验证 Safari 主窗口下的动态商品样本或动态负样本安全；动态证据不得用于证明视频页 Local Learning 闭环。
+Users can:
 
-## 5. 本地推理与自学习
+- Keep a local label.
+- Ignore a local label.
+- View local video learning records.
+- Delete one local video record.
+- Clear all local video learning records after confirmation.
+- Clear comment feedback locks after confirmation.
 
-本地推理用于补充上游未覆盖的整视频性质判断。
+Boundary: local learning data is stored only in the current browser's Tampermonkey storage. It does not change upstream SponsorBlock data or Bilibili data.
 
-已实现机制：
+## 6. QoL Core Console
 
-- 分源置信度阈值。
-- 自动信号优先级。
-- 手动保留和手动忽略优先于自动信号。
-- 低置信度信号不持久化。
-- 上游解析中或上游已命中时短路本地推理。
-- 控制台可查看、删除、清空本地视频学习记录，并可查看和清空评论反馈锁数量。
-- 识别样本库和离线评估脚本。
+The console provides:
 
-边界：
+- Category behavior and color settings.
+- Comment and dynamic-feed settings.
+- MBGA and compact-header controls.
+- Local learning management.
+- Diagnostic summaries for advanced troubleshooting.
 
-- 本地学习只影响当前浏览器和当前脚本实例。
-- 本地判断不代表 SponsorBlock 社区、Bilibili 官方或其他用户的结论。
-- 本地学习管理不展示评论原文，也不能删除上游 SponsorBlock 或 video label 记录。
-- V0312 Local Learning 证据只验证 isolated Safari/Tampermonkey profile 下的 page-heuristic 本地视频标签写入、控制台可见性、删除和 panel-derived refresh cleanup；current-profile restore、raw restore、organic comment scanning、comment feedback lock closure 和广泛误杀安全未验证。
+The console is a page overlay. It does not replace Bilibili settings.
 
-## 6. 低侵入 UI
+## 7. Compact Video Header
 
-QoL Core 尽量追加独立节点，不粗暴覆盖原生 DOM/CSS。
+The compact header preserves common search and account actions on supported video pages with a smaller footprint.
 
-主要 UI：
+Boundary: it hides during fullscreen modes and must not interfere with login, search, playback, comments, or Bilibili risk-control flows.
 
-- QoL Core 控制台。
-- 标题胶囊和说明/反馈 popover。
-- 缩略图胶囊。
-- 评论/动态 inline 标签和恢复按钮。
-- 紧凑视频顶部栏。
-- 通知中心。
-- 标签透明度和真实胶囊预览。
+## 8. MBGA Cleanup
 
-设计原则：
+MBGA applies a limited set of known rules for selected network, UI, and behavior noise.
 
-- 保持原生页面布局优先。
-- 控制玻璃、阴影、动画和 backdrop-filter 成本。
-- Safari 主窗口实机表现优先于代码层自洽。
+It may:
 
-## 7. MBGA 生态噪音压制（best-effort）
+- Remove selected URL noise parameters.
+- Simplify selected page UI elements.
+- Observe or synthesize responses for a narrow list of topbar badge requests when the compact header is active.
+- Apply optional experimental PCDN / WebRTC handling when enabled.
 
-MBGA 是可选能力，用于基于少量已知规则减少部分 B 站页面噪音。它不是完整隐私防护产品，也不承诺完整阻断遥测、完整禁用 PCDN / WebRTC 或全面清理 B 站生态。
+It does not:
 
-能力包括：
+- Guarantee complete telemetry blocking.
+- Guarantee complete PCDN disabling.
+- Provide a full privacy product.
+- Replace browser-level privacy, network, or extension controls.
 
-- 尝试减少部分已知遥测/追踪请求。
-- 对部分已知 WebRTC/PCDN 路径做 best-effort 压制；该子项为实验能力，新用户默认关闭。
-- 清理地址栏中明确列入规则的追踪参数。
-- 动态页宽屏开关。
-- 视频裁切模式补充入口。
-- 页面灰度和复制限制的低侵入修正。
+## 9. Not Implemented
 
-MBGA 主能力当前默认启用，但 PCDN / WebRTC 路径压制不再对新用户默认开启。V0312 Safari sampling 已以 `PASS WITH CAVEAT` 收束 MBGA evidence target；证据仍是 partial / below-HAR-grade，只支持 sampled known-host best-effort / partial cleanup 表述，不升级 MBGA claim，也不授权默认策略或规则扩张。
+QoL Core does not currently provide:
 
-## 8. 维护与安全交互
-
-控制台提供维护工具：
-
-- 清理 SponsorBlock 和整视频标签缓存。
-- 恢复默认设置。
-
-高风险操作使用二阶段确认、醒目视觉状态、持久化操作反馈和滚动位置保护，减少误触。
-
-## 9. 不提供的能力
-
-QoL Core 当前不提供：
-
-- 片段投稿。
-- 完整片段投票工作流。
-- 撤销上游投票 `type=20`。
-- `/api/viewedVideoSponsorTime` 观看记录上报。
-- portVideo 搬运视频绑定及投票。
-- 弹幕跳转。
-- 快捷键系统。
-- 独立扩展后台。
-- 浏览器扩展 popup/options 页面。
-- 远程模型、远程规则服务或在线 embedding。
+- SponsorBlock segment submission.
+- Full upstream category voting.
+- Undo vote support.
+- Viewed-sponsor-time reporting.
+- portVideo binding and voting.
+- Cloud sync for local learning records.
+- A guarantee that Bilibili interface changes will not break selectors.
