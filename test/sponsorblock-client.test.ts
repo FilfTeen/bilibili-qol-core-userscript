@@ -21,6 +21,17 @@ function createClient(cache?: Partial<CacheLike>) {
   };
 }
 
+function stubSegmentReadPayload(payload: unknown): ReturnType<typeof vi.fn> {
+  const gmRequest = vi.fn((options: { onload?: (response: { status: number; responseText: string }) => void }) => {
+    options.onload?.({
+      status: 200,
+      responseText: JSON.stringify(payload)
+    });
+  });
+  vi.stubGlobal("GM_xmlhttpRequest", gmRequest);
+  return gmRequest;
+}
+
 const video: VideoContext = {
   bvid: "BV17x411w7KC",
   cid: "111",
@@ -150,6 +161,178 @@ describe("sponsorblock client", () => {
           "x-ext-version": expect.any(String)
         })
       })
+    );
+  });
+
+  it("keeps only hashed payload records matching the current video id", async () => {
+    stubSegmentReadPayload([
+      {
+        videoID: "BV17x411w7KC",
+        segments: [
+          {
+            UUID: "current-video-segment",
+            category: "sponsor",
+            actionType: "skip",
+            segment: [10, 20]
+          }
+        ]
+      },
+      {
+        videoID: "BV1-other-video",
+        segments: [
+          {
+            UUID: "other-video-segment",
+            category: "sponsor",
+            actionType: "skip",
+            segment: [30, 40]
+          }
+        ]
+      }
+    ]);
+
+    const { client } = createClient();
+    const result = await client.getSegments(video, DEFAULT_CONFIG as StoredConfig);
+
+    expect(result.map((segment) => segment.UUID)).toEqual(["current-video-segment"]);
+  });
+
+  it("keeps all valid SponsorBlock action types during sanitation", async () => {
+    stubSegmentReadPayload([
+      {
+        videoID: "BV17x411w7KC",
+        segments: [
+          {
+            UUID: "valid-skip",
+            category: "sponsor",
+            actionType: "skip",
+            segment: [10, 20]
+          },
+          {
+            UUID: "valid-mute",
+            category: "music_offtopic",
+            actionType: "mute",
+            segment: [30, 35]
+          },
+          {
+            UUID: "valid-full",
+            category: "exclusive_access",
+            actionType: "full",
+            segment: [0, 0]
+          },
+          {
+            UUID: "valid-poi",
+            category: "poi_highlight",
+            actionType: "poi",
+            segment: [42]
+          }
+        ]
+      }
+    ]);
+
+    const { client } = createClient();
+    const result = await client.getSegments(video, DEFAULT_CONFIG as StoredConfig);
+
+    expect(result.map((segment) => segment.actionType)).toEqual(["skip", "mute", "full", "poi"]);
+  });
+
+  it("drops invalid category action uuid and segment shapes during sanitation", async () => {
+    stubSegmentReadPayload([
+      {
+        videoID: "BV17x411w7KC",
+        segments: [
+          {
+            UUID: "sane-segment",
+            category: "sponsor",
+            actionType: "skip",
+            segment: [10, 20]
+          },
+          {
+            UUID: "unknown-category",
+            category: "unknown",
+            actionType: "skip",
+            segment: [10, 20]
+          },
+          {
+            UUID: "unknown-action",
+            category: "sponsor",
+            actionType: "unknown",
+            segment: [10, 20]
+          },
+          {
+            category: "sponsor",
+            actionType: "skip",
+            segment: [10, 20]
+          },
+          {
+            UUID: "non-array-segment",
+            category: "sponsor",
+            actionType: "skip",
+            segment: "10,20"
+          },
+          {
+            UUID: "non-finite-start",
+            category: "sponsor",
+            actionType: "skip",
+            segment: [Number.NaN, 20]
+          },
+          {
+            UUID: "non-finite-end",
+            category: "sponsor",
+            actionType: "skip",
+            segment: [10, Number.POSITIVE_INFINITY]
+          },
+          {
+            UUID: "reversed-end",
+            category: "sponsor",
+            actionType: "skip",
+            segment: [20, 10]
+          }
+        ]
+      }
+    ]);
+
+    const { client } = createClient();
+    const result = await client.getSegments(video, DEFAULT_CONFIG as StoredConfig);
+
+    expect(result.map((segment) => segment.UUID)).toEqual(["sane-segment"]);
+  });
+
+  it("accepts one-point POI-like ranges for downstream normalization", async () => {
+    stubSegmentReadPayload([
+      {
+        videoID: "BV17x411w7KC",
+        segments: [
+          {
+            UUID: "poi-point",
+            category: "poi_highlight",
+            actionType: "poi",
+            segment: [42]
+          }
+        ]
+      }
+    ]);
+
+    const { client } = createClient();
+    const result = await client.getSegments(video, DEFAULT_CONFIG as StoredConfig);
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        UUID: "poi-point",
+        segment: [42]
+      })
+    ]);
+  });
+
+  it("throws a readable error on non-array top-level payloads", async () => {
+    stubSegmentReadPayload({
+      videoID: "BV17x411w7KC",
+      segments: []
+    });
+
+    const { client } = createClient();
+
+    await expect(client.getSegments(video, DEFAULT_CONFIG as StoredConfig)).rejects.toThrow(
+      "SponsorBlock API returned an unexpected payload shape"
     );
   });
 });

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili QoL Core
 // @namespace    https://github.com/FilfTeen/bilibili-qol-core-userscript
-// @version      0.3.11
+// @version      0.3.12
 // @description  Local-first quality-of-life toolkit for Bilibili: SponsorBlock segments, labels, comment/dynamic signals, MBGA cleanup, and low-intrusion UI.
 // @author       Hush_
 // @license      GPL-3.0-only
@@ -213,7 +213,7 @@
   var PRODUCT_NAME = "Bilibili QoL Core";
   var SCRIPT_NAME = PRODUCT_NAME;
   var AUTHOR_NAME = "Hush_";
-  var SCRIPT_VERSION = "0.3.11".trim().length > 0 ? "0.3.11" : "0.3.11";
+  var SCRIPT_VERSION = "0.3.12".trim().length > 0 ? "0.3.12" : "0.3.12";
   var CONFIG_STORAGE_KEY = "bsb_tm_config_v1";
   var STATS_STORAGE_KEY = "bsb_tm_stats_v1";
   var CACHE_STORAGE_KEY = "bsb_tm_cache_v1";
@@ -3538,6 +3538,18 @@ body[video-fit] #bilibili-player video { object-fit: cover !important; }
   function buildUrl2(serverAddress, path) {
     return `${serverAddress.replace(/\/+$/u, "")}${path}`;
   }
+  function reportVideoLabelDiagnostic(server, reason) {
+    reportDiagnostic({
+      severity: "warn",
+      area: "upstream",
+      message: "upstream/videoLabels \u6574\u89C6\u9891\u6807\u7B7E\u54CD\u5E94\u5F02\u5E38\uFF0C\u5DF2\u964D\u7EA7\u4E3A\u7A7A\u6807\u7B7E",
+      detail: {
+        endpoint: "videoLabels",
+        server,
+        reason
+      }
+    });
+  }
   var VideoLabelClient = class {
     constructor(cache) {
       this.cache = cache;
@@ -3554,21 +3566,52 @@ body[video-fit] #bilibili-player video { object-fit: cover !important; }
           response = yield this.cache.get(cacheKey);
         }
         if (!response) {
-          response = yield this.fetchWithDedup(cacheKey, buildUrl2(normalizedServer, `/api/videoLabels/${hashPrefix}`));
+          try {
+            response = yield this.fetchWithDedup(cacheKey, buildUrl2(normalizedServer, `/api/videoLabels/${hashPrefix}`));
+          } catch (error) {
+            reportDiagnostic({
+              severity: "warn",
+              area: "upstream",
+              message: "upstream/videoLabels \u6574\u89C6\u9891\u6807\u7B7E\u8BFB\u53D6\u5931\u8D25\uFF0C\u5DF2\u964D\u7EA7\u4E3A\u7A7A\u6807\u7B7E",
+              detail: {
+                endpoint: "videoLabels",
+                server: normalizedServer,
+                error
+              }
+            });
+            return null;
+          }
           if (config.enableCache && (response.status === 200 || response.status === 404)) {
             yield this.cache.set(cacheKey, response);
           }
         }
-        if (response.status === 404 || !response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        if (!response.ok) {
+          if (response.status >= 500) {
+            reportDiagnostic({
+              severity: "warn",
+              area: "upstream",
+              message: "upstream/videoLabels \u6574\u89C6\u9891\u6807\u7B7E\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF0C\u5DF2\u964D\u7EA7\u4E3A\u7A7A\u6807\u7B7E",
+              detail: {
+                endpoint: "videoLabels",
+                server: normalizedServer,
+                statusCode: response.status
+              }
+            });
+          }
           return null;
         }
         let payload;
         try {
           payload = JSON.parse(response.responseText);
         } catch (_error) {
+          reportVideoLabelDiagnostic(normalizedServer, "invalid-json");
           return null;
         }
         if (!Array.isArray(payload)) {
+          reportVideoLabelDiagnostic(normalizedServer, "unexpected-payload-shape");
           return null;
         }
         const record = payload.find((entry) => entry.videoID === videoId);
@@ -9402,7 +9445,9 @@ ${inlineSurfaceFrostedGlass.overlay}
     ".bsb-tm-notice-root",
     ".bsb-tm-notice"
   ];
+  var UPSTREAM_CREDENTIAL_PAIR_PATTERN = /(^|[^\w-])(?:cookie|token|authorization|auth|session|userID)\s*[:=]\s*(?:bearer\s+)?(?:"[^"]*"|'[^']*'|[^\s&,;]+)/giu;
   var SKIP_GRACE_WINDOW_MS = 1e4;
+  var SEGMENT_OUTAGE_NOTICE_COOLDOWN_MS = 6e4;
   var ScriptController = class {
     constructor(configStore, statsStore, cache, localVideoLabelStore, voteHistoryStore) {
       this.configStore = configStore;
@@ -9445,6 +9490,7 @@ ${inlineSurfaceFrostedGlass.overlay}
       __publicField(this, "upstreamLabelResolutionPending", false);
       __publicField(this, "lastTickTime", null);
       __publicField(this, "lastAnnouncedSignature", "");
+      __publicField(this, "upstreamOutageNoticeTimestamps", /* @__PURE__ */ new Map());
       __publicField(this, "handleVisibilityChange", () => {
         if (!document.hidden && this.pendingVisibleRefresh) {
           this.pendingVisibleRefresh = false;
@@ -9575,6 +9621,8 @@ ${inlineSurfaceFrostedGlass.overlay}
         });
       });
       __publicField(this, "userMuteListener", null);
+      __publicField(this, "pendingScriptMuteChange", null);
+      __publicField(this, "pendingScriptMuteTimerId", null);
       this.currentConfig = this.configStore.getSnapshot();
       this.currentStats = this.statsStore.getSnapshot();
       this.client = new SponsorBlockClient(this.cache);
@@ -9888,10 +9936,14 @@ ${inlineSurfaceFrostedGlass.overlay}
           });
           this.upstreamLabelResolutionPending = true;
           this.syncLocalFeedbackAvailability();
-          const [segments, videoLabelCategory] = yield Promise.all([
-            this.client.getSegments(context, this.currentConfig),
-            this.videoLabelClient.getVideoLabel(context.bvid, this.currentConfig)
-          ]);
+          let segments;
+          try {
+            segments = yield this.client.getSegments(context, this.currentConfig);
+          } catch (error) {
+            this.handleSegmentLoadFailure(context, error);
+            return;
+          }
+          const videoLabelCategory = yield this.resolveUpstreamVideoLabel(context.bvid);
           this.currentSegments = normalizeSegments(segments, this.currentConfig, context.cid);
           this.currentFullVideoLabels = resolveWholeVideoLabels(
             context.bvid,
@@ -9964,8 +10016,8 @@ ${inlineSurfaceFrostedGlass.overlay}
           debugLog("Failed to refresh video context", error);
           reportDiagnostic({
             severity: "error",
-            area: "upstream",
-            message: "\u89C6\u9891\u4E0A\u4E0B\u6587\u6216\u4E0A\u6E38\u7247\u6BB5\u8BFB\u53D6\u5931\u8D25",
+            area: "runtime",
+            message: "\u89C6\u9891\u4E0A\u4E0B\u6587\u5237\u65B0\u5931\u8D25",
             detail: error
           });
           this.updateRuntimeStatus({
@@ -10041,6 +10093,10 @@ ${inlineSurfaceFrostedGlass.overlay}
     }
     processSegment(segment, currentTime) {
       const state = this.getSegmentState(segment.UUID);
+      if (segment.actionType === "poi") {
+        this.processPoiSegment(segment, currentTime, state);
+        return;
+      }
       const resetThreshold = segment.start - SEGMENT_REWIND_RESET_SEC;
       if (currentTime < resetThreshold) {
         this.dismissSegmentNotice(segment);
@@ -10055,10 +10111,6 @@ ${inlineSurfaceFrostedGlass.overlay}
         state.poiShown = false;
         state.manualSkipGraceUntil = null;
         state.manualSkipGraceShown = false;
-        return;
-      }
-      if (segment.actionType === "poi") {
-        this.processPoiSegment(segment, currentTime, state);
         return;
       }
       if (segment.end === null) {
@@ -10268,7 +10320,7 @@ ${inlineSurfaceFrostedGlass.overlay}
         this.attachUserMuteListener();
       }
       this.activeMuteOwners.add(owner);
-      this.currentVideo.muted = true;
+      this.setMutedFromScript(true);
     }
     deactivateMute(owner) {
       if (!this.currentVideo) {
@@ -10277,15 +10329,41 @@ ${inlineSurfaceFrostedGlass.overlay}
       this.activeMuteOwners.delete(owner);
       if (this.activeMuteOwners.size === 0) {
         this.detachUserMuteListener();
-        this.currentVideo.muted = this.previousMutedState;
+        this.setMutedFromScript(this.previousMutedState);
       }
     }
     restoreMuteState() {
       this.detachUserMuteListener();
       if (this.currentVideo && this.activeMuteOwners.size > 0) {
-        this.currentVideo.muted = this.previousMutedState;
+        this.setMutedFromScript(this.previousMutedState);
       }
       this.activeMuteOwners.clear();
+    }
+    setMutedFromScript(muted) {
+      if (!this.currentVideo || this.currentVideo.muted === muted) {
+        return;
+      }
+      const video = this.currentVideo;
+      const pending = { video, muted };
+      this.clearPendingScriptMuteChange();
+      this.pendingScriptMuteChange = pending;
+      const timerId = window.setTimeout(() => {
+        if (this.pendingScriptMuteChange === pending) {
+          this.pendingScriptMuteChange = null;
+        }
+        if (this.pendingScriptMuteTimerId === timerId) {
+          this.pendingScriptMuteTimerId = null;
+        }
+      }, 0);
+      this.pendingScriptMuteTimerId = timerId;
+      video.muted = muted;
+    }
+    clearPendingScriptMuteChange() {
+      if (this.pendingScriptMuteTimerId !== null) {
+        window.clearTimeout(this.pendingScriptMuteTimerId);
+        this.pendingScriptMuteTimerId = null;
+      }
+      this.pendingScriptMuteChange = null;
     }
     attachUserMuteListener() {
       if (this.userMuteListener || !this.currentVideo) {
@@ -10293,10 +10371,13 @@ ${inlineSurfaceFrostedGlass.overlay}
       }
       const video = this.currentVideo;
       this.userMuteListener = () => {
-        if (this.activeMuteOwners.size > 0 && !video.muted) {
-          this.previousMutedState = false;
-        } else if (this.activeMuteOwners.size > 0 && video.muted) {
-          this.previousMutedState = true;
+        const pending = this.pendingScriptMuteChange;
+        if ((pending == null ? void 0 : pending.video) === video && pending.muted === video.muted) {
+          this.clearPendingScriptMuteChange();
+          return;
+        }
+        if (this.activeMuteOwners.size > 0) {
+          this.previousMutedState = video.muted;
         }
       };
       video.addEventListener("volumechange", this.userMuteListener);
@@ -10446,6 +10527,124 @@ ${inlineSurfaceFrostedGlass.overlay}
     }
     updateRuntimeStatus(status) {
       this.panel.updateRuntimeStatus(status);
+    }
+    resolveUpstreamVideoLabel(videoId) {
+      return __async(this, null, function* () {
+        try {
+          return yield this.videoLabelClient.getVideoLabel(videoId, this.currentConfig);
+        } catch (error) {
+          reportDiagnostic({
+            severity: "warn",
+            area: "upstream",
+            message: "upstream/videoLabels \u6574\u89C6\u9891\u6807\u7B7E\u8BFB\u53D6\u5931\u8D25\uFF0C\u5DF2\u964D\u7EA7\u4E3A\u7A7A\u6807\u7B7E",
+            detail: this.buildUpstreamDiagnosticDetail("videoLabels", error)
+          });
+          return null;
+        }
+      });
+    }
+    handleSegmentLoadFailure(context, error) {
+      debugLog("Failed to load SponsorBlock segments", error);
+      const failure = this.classifyUpstreamFailure(error);
+      const outageMessage = "\u9ED8\u8BA4\u4E0A\u6E38\u7247\u6BB5\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF0C\u672C\u5730\u9875\u9762\u589E\u5F3A\u7EE7\u7EED\u5DE5\u4F5C";
+      const genericMessage = failure.message ? `\u7247\u6BB5\u8BFB\u53D6\u5931\u8D25\uFF1A${failure.message}` : "\u7247\u6BB5\u8BFB\u53D6\u5931\u8D25";
+      reportDiagnostic({
+        severity: "error",
+        area: "upstream",
+        message: failure.isOutage ? "upstream/segments \u9ED8\u8BA4\u4E0A\u6E38\u7247\u6BB5\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528" : "upstream/segments \u7247\u6BB5\u8BFB\u53D6\u5931\u8D25",
+        detail: this.buildUpstreamDiagnosticDetail("segments", error)
+      });
+      this.updateRuntimeStatus({
+        kind: "error",
+        message: failure.isOutage ? outageMessage : genericMessage,
+        bvid: context.bvid,
+        segmentCount: null
+      });
+      this.showSegmentFailureNotice(
+        failure.isOutage ? "SponsorBlock \u7247\u6BB5\u6682\u65F6\u4E0D\u53EF\u7528" : "\u7247\u6BB5\u8BFB\u53D6\u5931\u8D25",
+        failure.isOutage ? `${outageMessage}\u3002\u7A0D\u540E\u4F1A\u81EA\u52A8\u91CD\u8BD5\u3002` : failure.message || "\u672A\u77E5\u9519\u8BEF",
+        failure.isOutage
+      );
+      this.upstreamLabelResolutionPending = false;
+      this.titleBadge.clear();
+      this.syncLocalFeedbackAvailability();
+    }
+    showSegmentFailureNotice(title, message, useCooldown) {
+      if (useCooldown) {
+        const key = this.upstreamEndpointKey("segments");
+        const now = Date.now();
+        const lastShownAt = this.upstreamOutageNoticeTimestamps.get(key);
+        if (lastShownAt !== void 0 && now - lastShownAt < SEGMENT_OUTAGE_NOTICE_COOLDOWN_MS) {
+          return;
+        }
+        this.upstreamOutageNoticeTimestamps.set(key, now);
+      }
+      this.notices.show({
+        id: "bsb-fetch-error",
+        title,
+        message,
+        durationMs: 4e3
+      });
+    }
+    reportVoteFailure(response) {
+      if (response.statusCode !== -1 && response.statusCode < 500) {
+        return;
+      }
+      reportDiagnostic({
+        severity: "warn",
+        area: "upstream",
+        message: "upstream/vote \u53CD\u9988\u63D0\u4EA4\u5931\u8D25",
+        detail: {
+          endpoint: "vote",
+          server: this.currentServerAddress(),
+          statusCode: response.statusCode,
+          responseText: this.sanitizeUpstreamDiagnosticText(response.responseText)
+        }
+      });
+    }
+    buildUpstreamDiagnosticDetail(endpoint, error) {
+      const failure = this.classifyUpstreamFailure(error);
+      return {
+        endpoint,
+        server: this.currentServerAddress(),
+        statusCode: failure.statusCode,
+        outage: failure.isOutage,
+        error: this.sanitizeUpstreamDiagnosticText(failure.message)
+      };
+    }
+    classifyUpstreamFailure(error) {
+      const message = error instanceof Error ? error.message : String(error != null ? error : "");
+      const statusMatch = /\b(?:returned|HTTP)\s+(\d{3})\b/iu.exec(message);
+      const statusCode = statusMatch ? Number(statusMatch[1]) : null;
+      const isNetworkFailure = /timed out|request failed|networkerror|failed to fetch|load failed/iu.test(message);
+      const isOutage = statusCode !== null ? statusCode >= 500 : isNetworkFailure;
+      return {
+        statusCode,
+        isOutage,
+        message
+      };
+    }
+    upstreamEndpointKey(endpoint) {
+      return `${this.currentServerAddress()}:${endpoint}`;
+    }
+    currentServerAddress() {
+      return this.currentConfig.serverAddress.replace(/\/+$/u, "");
+    }
+    sanitizeUpstreamDiagnosticText(input) {
+      return input.replace(/https?:\/\/\S+/giu, (rawUrl) => {
+        var _a, _b, _c;
+        const suffix = (_b = (_a = rawUrl.match(/[),.;]+$/u)) == null ? void 0 : _a[0]) != null ? _b : "";
+        const urlText = suffix ? rawUrl.slice(0, -suffix.length) : rawUrl;
+        try {
+          const url = new URL(urlText);
+          return `${url.origin}${url.pathname}${suffix}`;
+        } catch (_error) {
+          return `${(_c = urlText.split(/[?#]/u, 1)[0]) != null ? _c : ""}${suffix}`;
+        }
+      }).replace(
+        UPSTREAM_CREDENTIAL_PAIR_PATTERN,
+        (_match, prefix) => `${prefix}[redacted-credential]`
+      );
     }
     syncLocalFeedbackAvailability() {
       const detail = this.resolveLocalFeedbackAvailability();
@@ -10723,6 +10922,7 @@ ${inlineSurfaceFrostedGlass.overlay}
           });
           return "duplicate";
         }
+        this.reportVoteFailure(response);
         this.notices.show({
           id: `segment-vote-error:${segment.UUID}:${type}`,
           title: "\u53CD\u9988\u63D0\u4EA4\u5931\u8D25",

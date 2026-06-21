@@ -37,6 +37,7 @@ import type {
   LocalVideoSignal,
   RuntimeStatus,
   SegmentRecord,
+  SponsorTime,
   StoredConfig,
   StoredStats,
   VideoContext
@@ -84,7 +85,10 @@ const VIDEO_IGNORED_SELECTORS = [
   ".bsb-tm-notice-root",
   ".bsb-tm-notice"
 ] as const;
+const UPSTREAM_CREDENTIAL_PAIR_PATTERN =
+  /(^|[^\w-])(?:cookie|token|authorization|auth|session|userID)\s*[:=]\s*(?:bearer\s+)?(?:"[^"]*"|'[^']*'|[^\s&,;]+)/giu;
 const SKIP_GRACE_WINDOW_MS = 10_000;
+const SEGMENT_OUTAGE_NOTICE_COOLDOWN_MS = 60_000;
 
 export class ScriptController {
   private started = false;
@@ -122,6 +126,7 @@ export class ScriptController {
   private upstreamLabelResolutionPending = false;
   private lastTickTime: number | null = null;
   private lastAnnouncedSignature = "";
+  private readonly upstreamOutageNoticeTimestamps = new Map<string, number>();
   private readonly handleVisibilityChange = () => {
     if (!document.hidden && this.pendingVisibleRefresh) {
       this.pendingVisibleRefresh = false;
@@ -628,10 +633,15 @@ export class ScriptController {
       this.upstreamLabelResolutionPending = true;
       this.syncLocalFeedbackAvailability();
 
-      const [segments, videoLabelCategory] = await Promise.all([
-        this.client.getSegments(context, this.currentConfig),
-        this.videoLabelClient.getVideoLabel(context.bvid, this.currentConfig)
-      ]);
+      let segments: SponsorTime[];
+      try {
+        segments = await this.client.getSegments(context, this.currentConfig);
+      } catch (error) {
+        this.handleSegmentLoadFailure(context, error);
+        return;
+      }
+
+      const videoLabelCategory = await this.resolveUpstreamVideoLabel(context.bvid);
       this.currentSegments = normalizeSegments(segments, this.currentConfig, context.cid);
       this.currentFullVideoLabels = resolveWholeVideoLabels(
         context.bvid,
@@ -711,8 +721,8 @@ export class ScriptController {
       debugLog("Failed to refresh video context", error);
       reportDiagnostic({
         severity: "error",
-        area: "upstream",
-        message: "视频上下文或上游片段读取失败",
+        area: "runtime",
+        message: "视频上下文刷新失败",
         detail: error
       });
       this.updateRuntimeStatus({
@@ -815,6 +825,12 @@ export class ScriptController {
 
   private processSegment(segment: SegmentRecord, currentTime: number): void {
     const state = this.getSegmentState(segment.UUID);
+
+    if (segment.actionType === "poi") {
+      this.processPoiSegment(segment, currentTime, state);
+      return;
+    }
+
     const resetThreshold = segment.start - SEGMENT_REWIND_RESET_SEC;
 
     if (currentTime < resetThreshold) {
@@ -830,11 +846,6 @@ export class ScriptController {
       state.poiShown = false;
       state.manualSkipGraceUntil = null;
       state.manualSkipGraceShown = false;
-      return;
-    }
-
-    if (segment.actionType === "poi") {
-      this.processPoiSegment(segment, currentTime, state);
       return;
     }
 
@@ -1059,6 +1070,8 @@ export class ScriptController {
   }
 
   private userMuteListener: (() => void) | null = null;
+  private pendingScriptMuteChange: { video: HTMLVideoElement; muted: boolean } | null = null;
+  private pendingScriptMuteTimerId: number | null = null;
 
   private activateMute(owner: string): void {
     if (!this.currentVideo) {
@@ -1069,7 +1082,7 @@ export class ScriptController {
       this.attachUserMuteListener();
     }
     this.activeMuteOwners.add(owner);
-    this.currentVideo.muted = true;
+    this.setMutedFromScript(true);
   }
 
   private deactivateMute(owner: string): void {
@@ -1079,16 +1092,45 @@ export class ScriptController {
     this.activeMuteOwners.delete(owner);
     if (this.activeMuteOwners.size === 0) {
       this.detachUserMuteListener();
-      this.currentVideo.muted = this.previousMutedState;
+      this.setMutedFromScript(this.previousMutedState);
     }
   }
 
   private restoreMuteState(): void {
     this.detachUserMuteListener();
     if (this.currentVideo && this.activeMuteOwners.size > 0) {
-      this.currentVideo.muted = this.previousMutedState;
+      this.setMutedFromScript(this.previousMutedState);
     }
     this.activeMuteOwners.clear();
+  }
+
+  private setMutedFromScript(muted: boolean): void {
+    if (!this.currentVideo || this.currentVideo.muted === muted) {
+      return;
+    }
+
+    const video = this.currentVideo;
+    const pending = { video, muted };
+    this.clearPendingScriptMuteChange();
+    this.pendingScriptMuteChange = pending;
+    const timerId = window.setTimeout(() => {
+      if (this.pendingScriptMuteChange === pending) {
+        this.pendingScriptMuteChange = null;
+      }
+      if (this.pendingScriptMuteTimerId === timerId) {
+        this.pendingScriptMuteTimerId = null;
+      }
+    }, 0);
+    this.pendingScriptMuteTimerId = timerId;
+    video.muted = muted;
+  }
+
+  private clearPendingScriptMuteChange(): void {
+    if (this.pendingScriptMuteTimerId !== null) {
+      window.clearTimeout(this.pendingScriptMuteTimerId);
+      this.pendingScriptMuteTimerId = null;
+    }
+    this.pendingScriptMuteChange = null;
   }
 
   private attachUserMuteListener(): void {
@@ -1097,14 +1139,14 @@ export class ScriptController {
     }
     const video = this.currentVideo;
     this.userMuteListener = () => {
-      // If the script just muted (all owners active), ignore the event.
-      // Otherwise, the user changed mute state manually — respect their intent on restore.
-      if (this.activeMuteOwners.size > 0 && !video.muted) {
-        // User unmuted during a sponsor-mute segment — update saved state.
-        this.previousMutedState = false;
-      } else if (this.activeMuteOwners.size > 0 && video.muted) {
-        // Could be the script or the user; save muted as the intent to be safe.
-        this.previousMutedState = true;
+      const pending = this.pendingScriptMuteChange;
+      if (pending?.video === video && pending.muted === video.muted) {
+        this.clearPendingScriptMuteChange();
+        return;
+      }
+
+      if (this.activeMuteOwners.size > 0) {
+        this.previousMutedState = video.muted;
       }
     };
     video.addEventListener("volumechange", this.userMuteListener);
@@ -1272,6 +1314,136 @@ export class ScriptController {
 
   private updateRuntimeStatus(status: RuntimeStatus): void {
     this.panel.updateRuntimeStatus(status);
+  }
+
+  private async resolveUpstreamVideoLabel(videoId: string): Promise<Category | null> {
+    try {
+      return await this.videoLabelClient.getVideoLabel(videoId, this.currentConfig);
+    } catch (error) {
+      reportDiagnostic({
+        severity: "warn",
+        area: "upstream",
+        message: "upstream/videoLabels 整视频标签读取失败，已降级为空标签",
+        detail: this.buildUpstreamDiagnosticDetail("videoLabels", error)
+      });
+      return null;
+    }
+  }
+
+  private handleSegmentLoadFailure(context: VideoContext, error: unknown): void {
+    debugLog("Failed to load SponsorBlock segments", error);
+    const failure = this.classifyUpstreamFailure(error);
+    const outageMessage = "默认上游片段服务暂时不可用，本地页面增强继续工作";
+    const genericMessage = failure.message ? `片段读取失败：${failure.message}` : "片段读取失败";
+
+    reportDiagnostic({
+      severity: "error",
+      area: "upstream",
+      message: failure.isOutage ? "upstream/segments 默认上游片段服务暂时不可用" : "upstream/segments 片段读取失败",
+      detail: this.buildUpstreamDiagnosticDetail("segments", error)
+    });
+    this.updateRuntimeStatus({
+      kind: "error",
+      message: failure.isOutage ? outageMessage : genericMessage,
+      bvid: context.bvid,
+      segmentCount: null
+    });
+    this.showSegmentFailureNotice(
+      failure.isOutage ? "SponsorBlock 片段暂时不可用" : "片段读取失败",
+      failure.isOutage ? `${outageMessage}。稍后会自动重试。` : failure.message || "未知错误",
+      failure.isOutage
+    );
+    this.upstreamLabelResolutionPending = false;
+    this.titleBadge.clear();
+    this.syncLocalFeedbackAvailability();
+  }
+
+  private showSegmentFailureNotice(title: string, message: string, useCooldown: boolean): void {
+    if (useCooldown) {
+      const key = this.upstreamEndpointKey("segments");
+      const now = Date.now();
+      const lastShownAt = this.upstreamOutageNoticeTimestamps.get(key);
+      if (lastShownAt !== undefined && now - lastShownAt < SEGMENT_OUTAGE_NOTICE_COOLDOWN_MS) {
+        return;
+      }
+      this.upstreamOutageNoticeTimestamps.set(key, now);
+    }
+
+    this.notices.show({
+      id: "bsb-fetch-error",
+      title,
+      message,
+      durationMs: 4000
+    });
+  }
+
+  private reportVoteFailure(response: { statusCode: number; responseText: string }): void {
+    if (response.statusCode !== -1 && response.statusCode < 500) {
+      return;
+    }
+
+    reportDiagnostic({
+      severity: "warn",
+      area: "upstream",
+      message: "upstream/vote 反馈提交失败",
+      detail: {
+        endpoint: "vote",
+        server: this.currentServerAddress(),
+        statusCode: response.statusCode,
+        responseText: this.sanitizeUpstreamDiagnosticText(response.responseText)
+      }
+    });
+  }
+
+  private buildUpstreamDiagnosticDetail(endpoint: "segments" | "videoLabels", error: unknown): Record<string, unknown> {
+    const failure = this.classifyUpstreamFailure(error);
+    return {
+      endpoint,
+      server: this.currentServerAddress(),
+      statusCode: failure.statusCode,
+      outage: failure.isOutage,
+      error: this.sanitizeUpstreamDiagnosticText(failure.message)
+    };
+  }
+
+  private classifyUpstreamFailure(error: unknown): { statusCode: number | null; isOutage: boolean; message: string } {
+    const message = error instanceof Error ? error.message : String(error ?? "");
+    const statusMatch = /\b(?:returned|HTTP)\s+(\d{3})\b/iu.exec(message);
+    const statusCode = statusMatch ? Number(statusMatch[1]) : null;
+    const isNetworkFailure = /timed out|request failed|networkerror|failed to fetch|load failed/iu.test(message);
+    const isOutage = statusCode !== null ? statusCode >= 500 : isNetworkFailure;
+
+    return {
+      statusCode,
+      isOutage,
+      message
+    };
+  }
+
+  private upstreamEndpointKey(endpoint: "segments" | "videoLabels" | "vote"): string {
+    return `${this.currentServerAddress()}:${endpoint}`;
+  }
+
+  private currentServerAddress(): string {
+    return this.currentConfig.serverAddress.replace(/\/+$/u, "");
+  }
+
+  private sanitizeUpstreamDiagnosticText(input: string): string {
+    return input
+      .replace(/https?:\/\/\S+/giu, (rawUrl) => {
+        const suffix = rawUrl.match(/[),.;]+$/u)?.[0] ?? "";
+        const urlText = suffix ? rawUrl.slice(0, -suffix.length) : rawUrl;
+        try {
+          const url = new URL(urlText);
+          return `${url.origin}${url.pathname}${suffix}`;
+        } catch (_error) {
+          return `${urlText.split(/[?#]/u, 1)[0] ?? ""}${suffix}`;
+        }
+      })
+      .replace(
+        UPSTREAM_CREDENTIAL_PAIR_PATTERN,
+        (_match: string, prefix: string) => `${prefix}[redacted-credential]`
+      );
   }
 
   private syncLocalFeedbackAvailability(): void {
@@ -1588,6 +1760,7 @@ export class ScriptController {
       return "duplicate";
     }
 
+    this.reportVoteFailure(response);
     this.notices.show({
       id: `segment-vote-error:${segment.UUID}:${type}`,
       title: "反馈提交失败",

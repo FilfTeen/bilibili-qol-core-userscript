@@ -1,6 +1,6 @@
 # Capabilities
 
-This page describes what Bilibili QoL Core v0.3.11 does, where the boundaries are, and what users should not expect from the script.
+This page describes what Bilibili QoL Core v0.3.12 does, where the boundaries are, and what users should not expect from the script.
 
 ## 1. SponsorBlock Segments
 
@@ -20,6 +20,8 @@ Related UI:
 - Player control-bar shield button.
 
 Boundary: page structure, player behavior, login state, and API availability can affect segment behavior. Validate behavior in Safari after installing or updating the userscript.
+
+v0.3.12 boundary: `skipSegments` remains the core path. Optional whole-video label lookup can degrade without suppressing valid segment results. If segment loading itself fails, QoL Core should show a degraded/error state instead of presenting a false no-data result.
 
 ## 2. Whole-Video Labels
 
@@ -111,6 +113,7 @@ It does not:
 - Guarantee complete PCDN disabling.
 - Provide a full privacy product.
 - Replace browser-level privacy, network, or extension controls.
+- Change the default SponsorBlock service or add fallback server behavior.
 
 ## 9. Not Implemented
 

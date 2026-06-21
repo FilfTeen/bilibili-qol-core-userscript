@@ -1,6 +1,6 @@
 # Technical Overview
 
-Bilibili QoL Core v0.3.11 is a Tampermonkey userscript that enhances supported Bilibili pages with SponsorBlock segment handling, whole-video labels, local learning controls, comment and dynamic-feed hints, compact UI, and optional MBGA cleanup.
+Bilibili QoL Core v0.3.12 is a Tampermonkey userscript that enhances supported Bilibili pages with SponsorBlock segment handling, whole-video labels, local learning controls, comment and dynamic-feed hints, compact UI, and optional MBGA cleanup.
 
 ## Project Goals
 
@@ -37,18 +37,20 @@ Bilibili QoL Core v0.3.11 is a Tampermonkey userscript that enhances supported B
 
 1. Resolve the current video context.
 2. Request SponsorBlock segments.
-3. Normalize segments by category mode, `cid`, and minimum duration.
-4. Bind the controller to the video element.
-5. Drive skip, mute, notice, and point-of-interest behavior from playback time.
-6. Render timeline preview markers and notices.
+3. Treat non-404 segment request failures as degraded/error states rather than false no-data states.
+4. Normalize segments by category mode, `cid`, and minimum duration.
+5. Bind the controller to the video element.
+6. Drive skip, mute, notice, and point-of-interest behavior from playback time.
+7. Render timeline preview markers and notices.
 
 ## Whole-Video Label Flow
 
 1. Prefer SponsorBlock `full` segments.
 2. Use the whole-video label API summary when available.
-3. Use local page or comment signals only when upstream data is absent.
-4. Apply local learning rules for persistence and user overrides.
-5. Render title and thumbnail labels.
+3. Degrade optional whole-video label request failures independently so valid segments stay alive.
+4. Use local page or comment signals only when upstream data is absent.
+5. Apply local learning rules for persistence and user overrides.
+6. Render title and thumbnail labels.
 
 ## Upstream Voting Flow
 
@@ -85,6 +87,8 @@ MBGA uses explicit rules from `MBGA_RULES`. Rules are enabled by page type and u
 MBGA should be understood as a best-effort known-rule feature. It should not be presented as complete telemetry blocking, complete PCDN disabling, or full privacy protection.
 
 `disable-pcdn` is experimental and defaults to off for new users. Existing explicit user settings are preserved.
+
+v0.3.12 does not change MBGA defaults, rules, or public capability claims.
 
 ## Storage
 

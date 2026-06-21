@@ -1,14 +1,14 @@
-# Bilibili QoL Core (v0.3.11)
+# Bilibili QoL Core (v0.3.12)
 
 > A low-intrusion Bilibili enhancement userscript for Safari + Tampermonkey. It combines SponsorBlock segment handling, whole-video labels, comment and dynamic-feed hints, local learning controls, best-effort MBGA cleanup, and a compact settings console.
 
 Bilibili QoL Core is designed to add useful signals without taking over the original Bilibili page. Local inference stays local, explainable, and reversible. Safari with Tampermonkey is the primary validation environment; Chromium-based Tampermonkey browsers are compatibility targets.
 
-`v0.3.11` focuses on Local Learning Management, diagnostic transparency, URL normalization for diagnostic samples, and conservative MBGA behavior. MBGA remains a known-rule, best-effort cleanup feature. Experimental PCDN / WebRTC handling stays off by default for new users.
+`v0.3.12` focuses on SponsorBlock upstream-resilience behavior. It keeps the v0.3.11 Local Learning Management baseline and fixes a client-side failure mode where optional whole-video label requests could block otherwise valid segment results. MBGA remains a known-rule, best-effort cleanup feature. Experimental PCDN / WebRTC handling stays off by default for new users.
 
 ## Core Features
 
-- **SponsorBlock segment handling**: fetches segments by BVID hash prefix and supports skip, mute, point-of-interest highlights, preview bars, skip notices, undo, and keeping the current segment.
+- **SponsorBlock segment handling**: fetches segments by BVID hash prefix and supports skip, mute, point-of-interest highlights, preview bars, skip notices, undo, and keeping the current segment. Segment loading remains the core path even when optional whole-video label metadata is unavailable.
 - **Whole-video labels**: combines community `full` segments, video-label API summaries, page signals, comment signals, and local user choices to show title and thumbnail labels.
 - **Comment enhancements**: marks or folds likely commercial comments, product-card comments, suspicious promotion patterns, and reply-layer ads. It can also show Bilibili-provided IP location text when the page exposes it.
 - **Dynamic-feed enhancements**: marks or folds likely commercial dynamic posts on supported home, dynamic, and space pages while prioritizing false-positive reduction.
@@ -49,7 +49,8 @@ Video features focus on `/video/*`, `/list/*`, `/medialist/play/*`, `/bangumi/*`
 - [Technical Overview](./docs/TECHNICAL.md): module layout, runtime model, storage, and safety constraints.
 - [Reliability](./docs/RELIABILITY.md): which signals are stronger, which are heuristic, and how to use them carefully.
 - [Upstream Alignment](./docs/UPSTREAM_ALIGNMENT_AUDIT.md): differences from BilibiliSponsorBlock and SponsorBlock API behavior.
-- [v0.3.11 Release Notes](./docs/RELEASE_NOTES_V0311.md): user-facing changes and caveats for the current release line.
+- v0.3.12 release notes: user-facing changes and caveats for the current release line.
+- [v0.3.11 Release Notes](./docs/RELEASE_NOTES_V0311.md): previous Local Learning Management release notes.
 
 ## Configuration And Local Data
 

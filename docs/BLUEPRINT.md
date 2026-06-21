@@ -1,8 +1,8 @@
-# Bilibili QoL Core v0.3.11 Blueprint
+# Bilibili QoL Core v0.3.12 Blueprint
 
 This blueprint is the public product map for Bilibili QoL Core. It describes the runtime shape, implemented features, data boundaries, and validation entry points for contributors and advanced users.
 
-`v0.3.11` is the current release line. It focuses on Local Learning Management, diagnostic transparency, conservative MBGA cleanup, and keeping upstream behavior boundaries clear.
+`v0.3.12` is the current release line. It focuses on SponsorBlock upstream-resilience behavior while carrying forward Local Learning Management, diagnostic transparency, conservative MBGA cleanup, and clear upstream behavior boundaries.
 
 ## 1. Runtime Environment
 
@@ -30,7 +30,7 @@ Startup flow:
 
 | Capability | User value | Main implementation | Key tests | Validation focus |
 | --- | --- | --- | --- | --- |
-| SponsorBlock segments | Skip ads, mute sections, show POI highlights | `src/core/controller.ts`, `src/api/sponsorblock-client.ts`, `src/core/segment-filter.ts` | `test/controller.test.ts`, `test/segment-filter.test.ts` | Segment load, preview bar, skip, undo, keep-current, mute, POI |
+| SponsorBlock segments | Skip ads, mute sections, show POI highlights | `src/core/controller.ts`, `src/api/sponsorblock-client.ts`, `src/core/segment-filter.ts` | `test/controller.test.ts`, `test/segment-filter.test.ts` | Segment load, optional label outage resilience, preview bar, skip, undo, keep-current, mute, POI |
 | Whole-video labels | Show commercial nature for the whole video | `src/core/whole-video-label.ts`, `src/api/video-label-client.ts`, `src/ui/title-badge.ts` | `test/whole-video-label.test.ts`, `test/title-badge.test.ts` | Unique title badge, clear popover, correct feedback entry |
 | Thumbnail labels | Show video nature before opening videos | `src/features/thumbnail-labels.ts` | `test/thumbnail-labels.test.ts` | Home, search, history, and recommendation cards stay readable |
 | Comment enhancements | Mark or fold ads and suspicious promotion | `src/features/comment-filter.ts`, `src/utils/commercial-intent.ts` | `test/comment-filter.test.ts`, `test/commercial-intent.test.ts` | Product cards, promotion language, reply layer, restore action |
@@ -88,6 +88,8 @@ The `bsb_tm_*` prefix is kept for compatibility and does not follow the visible 
 
 - The SponsorBlock service URL is configurable and defaults to `https://www.bsbsb.top`.
 - API requests include `x-ext-version` and do not manually forge `Origin`.
+- `skipSegments` is the core segment path. Optional `videoLabels` failures must not suppress valid segment results.
+- No fallback server, default server change, or automatic server migration is part of v0.3.12.
 - The native request guard only returns synthetic responses for a narrow list of topbar badge requests after the compact header is mounted.
 - It does not block avatar, search, login, playback, comment, dynamic-feed, or risk-control requests.
 - Comment author profile requests are used only as optional promotion-detection hints and fail silently.

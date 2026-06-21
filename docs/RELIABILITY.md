@@ -11,6 +11,8 @@ Bilibili QoL Core is an auxiliary tool. It is not an official platform judgment,
 
 These signals have clearer sources or explicit user intent. They can still be affected by API state, page context, browser behavior, and script version.
 
+In v0.3.12, optional whole-video label request failures are handled separately from core segment loading. This makes valid segment results more reliable during partial upstream failures.
+
 ## Medium-Confidence Signals
 
 - Whole-video label API summaries.
@@ -61,6 +63,10 @@ If you keep or ignore the wrong local label, the script will respect that record
 - `video-label:*` summaries cannot be voted on directly.
 - `local-signal:*` labels are local and are not sent upstream.
 - `429` means the request was rate-limited and is not treated as success.
+
+## Upstream Availability Boundary
+
+The default SponsorBlock service remains `https://www.bsbsb.top`. v0.3.12 does not add a fallback server, change the default server, or promise current live health for the default server. Controlled mock-server validation covers client behavior during outage-like responses: segment outages should surface as degraded/error, while optional label outages should not suppress valid segments.
 
 ## Recommended Use
 

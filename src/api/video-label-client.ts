@@ -4,6 +4,7 @@ import { gmXmlHttpRequest } from "../platform/gm";
 import type { Category, FetchResponse, StoredConfig } from "../types";
 import { getHashPrefix } from "../utils/hash";
 import { normalizeServerAddress } from "../utils/url";
+import { reportDiagnostic } from "../utils/diagnostics";
 
 const VALID_CATEGORIES = new Set<Category>([
   "sponsor",
@@ -33,6 +34,19 @@ function buildUrl(serverAddress: string, path: string): string {
   return `${serverAddress.replace(/\/+$/u, "")}${path}`;
 }
 
+function reportVideoLabelDiagnostic(server: string, reason: "invalid-json" | "unexpected-payload-shape"): void {
+  reportDiagnostic({
+    severity: "warn",
+    area: "upstream",
+    message: "upstream/videoLabels 整视频标签响应异常，已降级为空标签",
+    detail: {
+      endpoint: "videoLabels",
+      server,
+      reason
+    }
+  });
+}
+
 export class VideoLabelClient {
   private readonly inFlightRequests = new Map<string, Promise<FetchResponse>>();
 
@@ -49,14 +63,44 @@ export class VideoLabelClient {
     }
 
     if (!response) {
-      response = await this.fetchWithDedup(cacheKey, buildUrl(normalizedServer, `/api/videoLabels/${hashPrefix}`));
+      try {
+        response = await this.fetchWithDedup(cacheKey, buildUrl(normalizedServer, `/api/videoLabels/${hashPrefix}`));
+      } catch (error) {
+        reportDiagnostic({
+          severity: "warn",
+          area: "upstream",
+          message: "upstream/videoLabels 整视频标签读取失败，已降级为空标签",
+          detail: {
+            endpoint: "videoLabels",
+            server: normalizedServer,
+            error
+          }
+        });
+        return null;
+      }
 
       if (config.enableCache && (response.status === 200 || response.status === 404)) {
         await this.cache.set(cacheKey, response);
       }
     }
 
-    if (response.status === 404 || !response.ok) {
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      if (response.status >= 500) {
+        reportDiagnostic({
+          severity: "warn",
+          area: "upstream",
+          message: "upstream/videoLabels 整视频标签服务暂时不可用，已降级为空标签",
+          detail: {
+            endpoint: "videoLabels",
+            server: normalizedServer,
+            statusCode: response.status
+          }
+        });
+      }
       return null;
     }
 
@@ -64,10 +108,12 @@ export class VideoLabelClient {
     try {
       payload = JSON.parse(response.responseText);
     } catch (_error) {
+      reportVideoLabelDiagnostic(normalizedServer, "invalid-json");
       return null;
     }
 
     if (!Array.isArray(payload)) {
+      reportVideoLabelDiagnostic(normalizedServer, "unexpected-payload-shape");
       return null;
     }
 

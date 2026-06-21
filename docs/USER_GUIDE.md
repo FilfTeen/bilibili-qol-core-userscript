@@ -1,6 +1,6 @@
 # User Guide
 
-This guide covers daily use of Bilibili QoL Core v0.3.11.
+This guide covers daily use of Bilibili QoL Core v0.3.12.
 
 ## 1. Install
 
@@ -37,6 +37,8 @@ During playback, notices may offer:
 - Undo skip.
 - Keep current segment.
 - Open settings.
+
+If optional whole-video label metadata is unavailable, segment controls can still work when valid SponsorBlock segments are returned. If segment loading itself fails, QoL Core should show a degraded/error state rather than a false no-data result.
 
 ## 4. Whole-Video Labels
 

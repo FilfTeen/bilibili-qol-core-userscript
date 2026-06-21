@@ -1,6 +1,6 @@
 # Upstream Alignment
 
-This document explains how Bilibili QoL Core v0.3.11 aligns with BilibiliSponsorBlock and SponsorBlock API behavior.
+This document explains how Bilibili QoL Core v0.3.12 aligns with BilibiliSponsorBlock and SponsorBlock API behavior.
 
 ## Summary
 
@@ -9,6 +9,8 @@ The upstream service is not treated as unavailable. Whole-video feedback has a s
 - `skipSegments` can return `actionType: "full"` segments with real UUIDs. Those can be voted on.
 - `videoLabels` returns category summaries without votable UUIDs. Those are display-only.
 - Local inference labels are written only to local learning data and are not sent upstream.
+
+v0.3.12 keeps that boundary and improves partial-outage handling: `skipSegments` remains the core path, while optional `videoLabels` failures degrade independently.
 
 ## Current API Mapping
 
@@ -27,6 +29,9 @@ The upstream service is not treated as unavailable. Whole-video feedback has a s
 - New user IDs use 36-character base62 values.
 - Existing UUID-style user IDs are preserved.
 - Title badge wording distinguishes community `full` labels, whole-video label API summaries, and local inference labels.
+- Segment request failures that are not 404 are surfaced as degraded/error states instead of false no-data states.
+- Optional whole-video label failures do not suppress valid segment results.
+- No fallback server, default server change, or automatic server migration is introduced.
 
 ## Remaining Differences
 

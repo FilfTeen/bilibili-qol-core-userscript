@@ -31,6 +31,6 @@ v0.3.11 focuses on Local Learning Management, clearer diagnostic behavior, and c
 - Confirm the old `dist/bilibili-sponsorblock.user.js` artifact does not reappear.
 - Validate core video, comment, dynamic-feed, thumbnail, console, and upstream full-label feedback behavior in Safari before making stronger release claims.
 
-## Recommended Release Message
+## Short Changelog Summary
 
-QoL Core v0.3.11 adds Local Learning Management and improves diagnostic transparency. The release keeps MBGA claims conservative: best-effort, partial, and experimental where appropriate. Safari main-window validation remains the reference for release confidence.
+QoL Core v0.3.11 adds Local Learning Management and improves diagnostic transparency. MBGA remains best-effort, partial, and experimental where appropriate. Safari validation remains the reference for stronger compatibility claims.
